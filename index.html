@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>AR Geometry Learning</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap" rel="stylesheet">
 
     <style>
-        body { margin: 0; font-family: 'Sarabun', sans-serif; overflow: hidden; touch-action: none; }
+        /* 🔥 ป้องกันหน้าเว็บขยับตามนิ้ว (สำคัญมากสำหรับการซูม AR) 🔥 */
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; touch-action: none; /* ห้าม Browser แย่ง Touch Event */
+        }
+        
         .bg-gradient { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); z-index: -2; opacity: 0.6; }
 
-        /* UI Styles (เหมือนเดิม) */
+        /* UI Styles เดิม */
         #intro-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(10px); }
         .glass-card { background: rgba(255, 255, 255, 0.95); padding: 30px 20px; border-radius: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); text-align: center; max-width: 420px; width: 100%; border: 1px solid rgba(255, 255, 255, 0.8); overflow-y: auto; max-height: 95vh; }
         .app-header { margin-bottom: 20px; }
@@ -57,7 +62,7 @@
     </style>
 
     <script>
-        // Component: ตรวจจับนิ้ว (Gesture Detector)
+        // 1. ตัวจับความเคลื่อนไหวนิ้ว
         AFRAME.registerComponent("gesture-detector", {
             schema: { element: { default: "" } },
             init: function() {
@@ -78,22 +83,6 @@
                 const currentState = this.getTouchState(event);
                 const previousState = this.internalState.previousState;
                 const gestureContinues = previousState && currentState && currentState.touchCount == previousState.touchCount;
-                const gestureEnded = previousState && !gestureContinues;
-                const gestureStarted = currentState && !gestureContinues;
-
-                if (gestureEnded) {
-                    const eventName = this.getEventPrefix(previousState.touchCount) + "fingerend";
-                    this.el.emit(eventName, previousState);
-                    this.internalState.previousState = null;
-                }
-                if (gestureStarted) {
-                    currentState.startTime = performance.now();
-                    currentState.startPosition = currentState.position;
-                    currentState.startSpread = currentState.spread;
-                    const eventName = this.getEventPrefix(currentState.touchCount) + "fingerstart";
-                    this.el.emit(eventName, currentState);
-                    this.internalState.previousState = currentState;
-                }
                 if (gestureContinues) {
                     const eventDetail = {
                         positionChange: { x: currentState.position.x - previousState.position.x, y: currentState.position.y - previousState.position.y },
@@ -101,17 +90,18 @@
                     if (currentState.spread) {
                         eventDetail.spreadChange = currentState.spread - previousState.spread;
                     }
-                    const eventName = this.getEventPrefix(currentState.touchCount) + "fingermove";
+                    // ส่งเหตุการณ์ "twofingermove" ไปให้ scene
+                    const eventName = (currentState.touchCount === 2) ? "twofingermove" : "onefingermove";
                     this.el.emit(eventName, eventDetail);
                     this.internalState.previousState = currentState;
                 }
+                if (currentState && !gestureContinues) { this.internalState.previousState = currentState; }
+                if (!currentState) { this.internalState.previousState = null; }
             },
             getTouchState: function(event) {
                 if (event.touches.length === 0) return null;
                 const touchList = [];
-                for (let i = 0; i < event.touches.length; i++) {
-                    touchList.push({ x: event.touches[i].clientX, y: event.touches[i].clientY });
-                }
+                for (let i = 0; i < event.touches.length; i++) { touchList.push({ x: event.touches[i].clientX, y: event.touches[i].clientY }); }
                 const center = touchList.reduce((a, b) => ({ x: a.x + b.x, y: a.y + b.y }));
                 center.x /= touchList.length; center.y /= touchList.length;
                 let spread = null;
@@ -121,20 +111,14 @@
                     spread = Math.sqrt(dx * dx + dy * dy);
                 }
                 return { touchCount: touchList.length, position: center, spread: spread };
-            },
-            getEventPrefix: function(touchCount) {
-                const names = ["one", "two", "three", "many"];
-                return names[Math.min(touchCount, 4) - 1];
             }
         });
 
-        // Component: สั่งย่อขยาย (Gesture Handler)
+        // 2. ตัวสั่งย่อขยายโมเดล
         AFRAME.registerComponent("gesture-handler", {
-            schema: { enabled: { default: true }, minScale: { default: 0.1 }, maxScale: { default: 5 } },
+            schema: { minScale: { default: 0.1 }, maxScale: { default: 8 } },
             init: function() {
                 this.handleScale = this.handleScale.bind(this);
-                this.isVisible = false;
-                this.initialScale = this.el.object3D.scale.clone();
                 this.scaleFactor = 1;
                 this.el.sceneEl.addEventListener("twofingermove", this.handleScale);
             },
@@ -142,13 +126,11 @@
                 this.el.sceneEl.removeEventListener("twofingermove", this.handleScale);
             },
             handleScale: function(event) {
-                if (this.isVisible) {
-                    this.scaleFactor *= 1 + event.detail.spreadChange / event.detail.startSpread;
-                    this.scaleFactor = Math.min(Math.max(this.scaleFactor, this.data.minScale), this.data.maxScale);
-                    this.el.object3D.scale.x = this.scaleFactor * this.initialScale.x;
-                    this.el.object3D.scale.y = this.scaleFactor * this.initialScale.y;
-                    this.el.object3D.scale.z = this.scaleFactor * this.initialScale.z;
-                }
+                // ย่อขยายโมเดลตามนิ้วที่ถ่างออก
+                this.scaleFactor *= 1 + event.detail.spreadChange / event.detail.startSpread;
+                this.scaleFactor = Math.min(Math.max(this.scaleFactor, this.data.minScale), this.data.maxScale);
+                
+                this.el.object3D.scale.set(this.scaleFactor, this.scaleFactor, this.scaleFactor);
             }
         });
     </script>
@@ -181,7 +163,7 @@
             <div class="section-title">📚 สื่อเสริม</div>
             <div class="resource-btn" onclick="openVideoModal()">
                 <div class="res-icon" style="color: #ff0000;">📺</div>
-                <div class="res-text"><h3>คลิปการเรียนรู้ วิชาคณิตศาสตร์</h3><span>ชมคลิปวิดีโอ</span></div>
+                <div class="res-text"><h3>วิธีใช้งาน</h3><span>ชมคลิปวิดีโอ</span></div>
             </div>
             <div class="resource-btn" onclick="openBookLink()">
                 <div class="res-icon" style="color: #4CAF50;">📖</div>
@@ -229,10 +211,12 @@
         <button id="btn-close-ar" onclick="stopAR()">❌ ปิดกล้อง</button>
     </div>
 
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiError: no; uiScanning: no;" 
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiError: no; uiScanning: no; filterMinCF: 0.0001; missTolerance: 10;" 
              color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" 
              vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false"
-             gesture-detector> <a-assets>
+             gesture-detector> 
+        
+        <a-assets>
             <a-asset-item id="glb-1" src="./m1.glb"></a-asset-item>
             <a-asset-item id="glb-2" src="./m2.glb"></a-asset-item>
             <a-asset-item id="glb-3" src="./m3.glb"></a-asset-item>
@@ -258,13 +242,13 @@
         </a-camera>
 
         <a-entity id="ar-group" visible="false">
-            <a-entity mindar-image-target="targetIndex: 0"><a-gltf-model id="ar-m1" src="#glb-1" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
-            <a-entity mindar-image-target="targetIndex: 1"><a-gltf-model id="ar-m2" src="#glb-2" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
-            <a-entity mindar-image-target="targetIndex: 2"><a-gltf-model id="ar-m3" src="#glb-3" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
-            <a-entity mindar-image-target="targetIndex: 3"><a-gltf-model id="ar-m4" src="#glb-4" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
-            <a-entity mindar-image-target="targetIndex: 4"><a-gltf-model id="ar-m5" src="#glb-5" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
-            <a-entity mindar-image-target="targetIndex: 5"><a-gltf-model id="ar-m6" src="#glb-6" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
-            <a-entity mindar-image-target="targetIndex: 6"><a-gltf-model id="ar-m7" src="#glb-7" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 0"><a-gltf-model src="#glb-1" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 1"><a-gltf-model src="#glb-2" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 2"><a-gltf-model src="#glb-3" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 3"><a-gltf-model src="#glb-4" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 4"><a-gltf-model src="#glb-5" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 5"><a-gltf-model src="#glb-6" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 6"><a-gltf-model src="#glb-7" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
         </a-entity>
 
     </a-scene>
@@ -326,21 +310,6 @@
 
         function nextModel() { if(isProcessing) return; currentIdx = (currentIdx + 1) % geometryData.length; updateGallery(); }
         function prevModel() { if(isProcessing) return; currentIdx = (currentIdx - 1 + geometryData.length) % geometryData.length; updateGallery(); }
-
-        // ฟังก์ชันสำคัญ: เปิดใช้ Gesture Handler เมื่อส่องเจอภาพ
-        const arModels = ["ar-m1", "ar-m2", "ar-m3", "ar-m4", "ar-m5", "ar-m6", "ar-m7"];
-        
-        arModels.forEach((id, index) => {
-            const targetEntity = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
-            targetEntity.addEventListener("targetFound", event => {
-                const model = document.getElementById(id);
-                model.components["gesture-handler"].isVisible = true;
-            });
-            targetEntity.addEventListener("targetLost", event => {
-                const model = document.getElementById(id);
-                model.components["gesture-handler"].isVisible = false;
-            });
-        });
 
         async function startAR() {
             if(isProcessing) return;
