@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AR Geometry Learning</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { margin: 0; font-family: 'Sarabun', sans-serif; overflow: hidden; touch-action: none; }
+
+        /* พื้นหลัง */
+        .bg-gradient {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+            z-index: -2; opacity: 0.6;
+        }
+
+        /* --- Intro Screen --- */
+        #intro-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 9999; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding: 20px; box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(10px);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px 20px; border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            text-align: center; max-width: 420px; width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            overflow-y: auto; max-height: 95vh;
+        }
+
+        /* หัวข้อ */
+        .app-header { margin-bottom: 20px; }
+        .app-logo { font-size: 50px; margin-bottom: 5px; display: inline-block; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
+        h1 { margin: 0; color: #2c3e50; font-size: 26px; font-weight: 800; }
+        p { margin: 5px 0 0 0; color: #666; font-size: 14px; }
+
+        /* ปุ่มเมนู */
+        .section-title { text-align: left; font-size: 14px; font-weight: bold; color: #555; margin: 15px 5px 5px 5px; }
+        .main-menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .menu-btn {
+            background: #fff; border: 2px solid #f0f0f0; padding: 15px 5px; border-radius: 20px;
+            cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 4px 5px rgba(0,0,0,0.03);
+        }
+        .menu-btn:hover { border-color: #23a6d5; background: #e0f7fa; transform: translateY(-3px); }
+        .menu-icon { font-size: 32px; margin-bottom: 5px; }
+        .menu-title { font-weight: bold; font-size: 16px; color: #333; }
+        .menu-desc { font-size: 12px; color: #888; }
+
+        .resource-btn {
+            width: 100%; padding: 12px; margin-bottom: 8px;
+            background: white; border: 1px solid #ddd; border-radius: 15px;
+            display: flex; align-items: center; gap: 15px; text-align: left;
+            cursor: pointer; transition: 0.2s; box-sizing: border-box;
+        }
+        .res-icon { width: 40px; height: 40px; background: #eee; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 20px; }
+        .res-text h3 { margin: 0; font-size: 15px; color: #333; }
+        .res-text span { font-size: 12px; color: #888; }
+
+        /* --- Modals (Video & Formula) --- */
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); z-index: 10000; 
+            display: none; flex-direction: column; justify-content: center; align-items: center; 
+        }
+        .video-container { width: 90%; max-width: 600px; aspect-ratio: 16/9; background: black; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        /* Formula Box Style */
+        .formula-box {
+            background: white; width: 85%; max-width: 400px; padding: 25px; border-radius: 25px;
+            text-align: left; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .formula-title { font-size: 22px; font-weight: 800; color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .formula-item { margin-bottom: 15px; }
+        .formula-label { font-size: 14px; color: #888; font-weight: bold; }
+        .formula-math { font-size: 18px; color: #333; font-family: 'Times New Roman', serif; font-style: italic; background: #f9f9f9; padding: 8px; border-radius: 8px; margin-top: 5px; }
+        .close-modal-btn { 
+            margin-top: 20px; padding: 10px 30px; border-radius: 50px; border: none; 
+            background: #ff4757; color: white; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%;
+        }
+
+        /* Gallery UI */
+        #gallery-ui { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: none; pointer-events: none; }
+        #top-bar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 90%; text-align: center; pointer-events: auto; }
+        #model-name-box { background: rgba(255,255,255,0.95); padding: 10px 25px; border-radius: 50px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: inline-block; }
+        #model-name { font-size: 20px; font-weight: 800; color: #333; }
+        
+        #bottom-controls { position: absolute; bottom: 30px; width: 100%; text-align: center; pointer-events: auto; }
+        .ctrl-group { background: rgba(255,255,255,0.95); padding: 8px; border-radius: 40px; display: inline-flex; gap: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 15px; align-items: center;}
+        
+        .btn-ctrl { width: 50px; height: 50px; border-radius: 50%; border: none; background: #f1f2f6; font-size: 22px; cursor: pointer; color: #333; }
+        
+        /* ปุ่มสูตร (สีเหลือง) */
+        .btn-formula { width: 50px; height: 50px; border-radius: 50%; border: none; background: #feca57; font-size: 24px; cursor: pointer; color: #333; box-shadow: 0 4px 10px rgba(254, 202, 87, 0.4); }
+        .btn-formula:active { transform: scale(0.9); }
+
+        #btn-open-ar { background: #2ed573; color: white; border: none; padding: 15px 40px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 10px 20px rgba(46, 213, 115, 0.4); }
+
+        /* AR UI */
+        #ar-ui { position: fixed; bottom: 30px; left: 0; width: 100%; text-align: center; z-index: 2000; display: none; }
+        #btn-close-ar { background: #ff4757; color: white; padding: 12px 35px; border: none; border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4); }
+        #ar-guide { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: rgba(0,0,0,0.7); color: white; padding: 12px; border-radius: 30px; text-align: center; z-index: 2000; display: none; backdrop-filter: blur(5px); }
+
+        /* Loading */
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; color: white; justify-content: center; align-items: center; font-size: 20px; flex-direction: column; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #2ed573; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="bg-gradient"></div>
+    <div id="loading"><div class="spinner"></div>กำลังดำเนินการ...</div>
+
+    <div id="intro-screen">
+        <div class="glass-card">
+            <div class="app-header">
+                <div class="app-logo">🧊</div>
+                <h1>AR Geometry</h1>
+                <p>สื่อการเรียนรู้เรขาคณิต 3 มิติ</p>
+            </div>
+
+            <div class="section-title">🚀 เข้าสู่บทเรียน</div>
+            <div class="main-menu-grid">
+                <div class="menu-btn" onclick="enterGallery()">
+                    <div class="menu-icon">👀</div>
+                    <div class="menu-title">โหมด 3D</div>
+                    <div class="menu-desc">หมุนดูโมเดล</div>
+                </div>
+                <div class="menu-btn" onclick="enterARDirectly()">
+                    <div class="menu-icon">📷</div>
+                    <div class="menu-title">โหมด AR</div>
+                    <div class="menu-desc">ส่อง Marker</div>
+                </div>
+            </div>
+
+            <div class="section-title">📚 สื่อเสริม</div>
+            <div class="resource-btn" onclick="openVideoModal()">
+                <div class="res-icon" style="color: #ff0000;">📺</div>
+                <div class="res-text"><h3>คลิปสอน เรขาคณิต</h3><span>ชมคลิปวิดีโอ</span></div>
+            </div>
+            <div class="resource-btn" onclick="openBookLink()">
+                <div class="res-icon" style="color: #4CAF50;">📖</div>
+                <div class="res-text"><h3>หนังสือเรียน</h3><span>อ่านบทเรียนเพิ่มเติม</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="video-modal" class="modal-overlay">
+        <div class="video-container">
+            <iframe id="youtube-frame" width="100%" height="100%" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
+        <button class="close-modal-btn" style="width:auto; border:1px solid white; background:transparent;" onclick="closeVideoModal()">❌ ปิดหน้าต่าง</button>
+    </div>
+
+    <div id="formula-modal" class="modal-overlay">
+        <div class="formula-box">
+            <div id="formula-title" class="formula-title">...</div>
+            
+            <div class="formula-item">
+                <div class="formula-label">📐 พื้นที่ผิว (Surface Area)</div>
+                <div id="formula-area" class="formula-math">...</div>
+            </div>
+            
+            <div class="formula-item">
+                <div class="formula-label">🧊 ปริมาตร (Volume)</div>
+                <div id="formula-volume" class="formula-math">...</div>
+            </div>
+
+            <button class="close-modal-btn" onclick="closeFormulaModal()">ตกลง / ปิด</button>
+        </div>
+    </div>
+
+    <div id="ar-guide">📷 <b>ส่องกล้องไปที่การ์ด</b><span>ขยับกล้องเข้า-ออก เพื่อโฟกัส</span></div>
+
+    <div id="gallery-ui">
+        <div id="top-bar"><div id="model-name-box"><span id="model-name">...</span></div></div>
+        <div id="bottom-controls">
+            <div class="ctrl-group">
+                <button class="btn-ctrl" onclick="prevModel()">◀</button>
+                <button class="btn-ctrl" onclick="enterMenu()">🏠</button>
+                <button class="btn-formula" onclick="openFormula()">📐</button>
+                <button class="btn-ctrl" onclick="nextModel()">▶</button>
+            </div>
+            <br>
+            <button id="btn-open-ar" onclick="startAR()">📷 สแกน</button>
+        </div>
+    </div>
+
+    <div id="ar-ui">
+        <button id="btn-close-ar" onclick="stopAR()">❌ ปิดกล้อง</button>
+    </div>
+
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiError: no; uiScanning: no;" 
+             color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" 
+             vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+        
+        <a-assets>
+            <a-asset-item id="glb-1" src="./m1.glb"></a-asset-item>
+            <a-asset-item id="glb-2" src="./m2.glb"></a-asset-item>
+            <a-asset-item id="glb-3" src="./m3.glb"></a-asset-item>
+            <a-asset-item id="glb-4" src="./m4.glb"></a-asset-item>
+            <a-asset-item id="glb-5" src="./m5.glb"></a-asset-item>
+            <a-asset-item id="glb-6" src="./m6.glb"></a-asset-item>
+            <a-asset-item id="glb-7" src="./m7.glb"></a-asset-item>
+        </a-assets>
+
+        <a-light type="ambient" intensity="1.2"></a-light>
+        <a-light type="directional" position="2 4 2" intensity="0.8"></a-light>
+
+        <a-camera position="0 0 0" look-controls="enabled: false">
+            <a-entity id="gallery-group" position="0 -0.5 -3" visible="true">
+                <a-gltf-model id="view-m1" src="#glb-1" scale="0.5 0.5 0.5" visible="true" animation="property: rotation; to: 0 360 0; dur: 8000; loop: true"></a-gltf-model>
+                <a-gltf-model id="view-m2" src="#glb-2" scale="0.5 0.5 0.5" visible="false" animation="property: rotation; to: 0 360 0; dur: 8000; loop: true"></a-gltf-model>
+                <a-gltf-model id="view-m3" src="#glb-3" scale="0.5 0.5 0.5" visible="false" animation="property: rotation; to: 0 360 0; dur: 8000; loop: true"></a-gltf-model>
+                <a-gltf-model id="view-m4" src="#glb-4" scale="0.5 0.5 0.5" visible="false" animation="property: rotation; to: 0 360 0; dur: 8000; loop: true"></a-gltf-model>
+                <a-gltf-model id="view-m5" src="#glb-5" scale="0.5 0.5 0.5" visible="false" animation="property: rotation; to: 0 360 0; dur: 8000; loop: true"></a-gltf-model>
+                <a-gltf-model id="view-m6" src="#glb-6" scale="0.5 0.5 0.5" visible="false" animation="property: rotation; to: 0 360 0; dur: 8000; loop: true"></a-gltf-model>
+                <a-gltf-model id="view-m7" src="#glb-7" scale="0.5 0.5 0.5" visible="false" animation="property: rotation; to: 0 360 0; dur: 8000; loop: true"></a-gltf-model>
+            </a-entity>
+        </a-camera>
+
+        <a-entity id="ar-group" visible="false">
+            <a-entity mindar-image-target="targetIndex: 0"><a-gltf-model src="#glb-1" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; dur: 6000; loop: true"></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 1"><a-gltf-model src="#glb-2" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; dur: 6000; loop: true"></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 2"><a-gltf-model src="#glb-3" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; dur: 6000; loop: true"></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 3"><a-gltf-model src="#glb-4" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; dur: 6000; loop: true"></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 4"><a-gltf-model src="#glb-5" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; dur: 6000; loop: true"></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 5"><a-gltf-model src="#glb-6" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; dur: 6000; loop: true"></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 6"><a-gltf-model src="#glb-7" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; dur: 6000; loop: true"></a-gltf-model></a-entity>
+        </a-entity>
+
+    </a-scene>
+
+    <script>
+        // --- ข้อมูลสูตรคณิตศาสตร์ ---
+        const geometryData = [
+            { name: "ลูกบาศก์ (Cube)", area: "6 × ด้าน²", vol: "ด้าน³" },
+            { name: "ทรงกลม (Sphere)", area: "4πr²", vol: "4/3 × πr³" },
+            { name: "ทรงกระบอก (Cylinder)", area: "2πrh + 2πr²", vol: "πr²h" },
+            { name: "กรวย (Cone)", area: "πrl + πr²", vol: "1/3 × πr²h" },
+            { name: "วงแหวน (Torus)", area: "4π²Rr", vol: "2π²Rr²" },
+            { name: "พีระมิด (Pyramid)", area: "ฐาน + 1/2 × รอบฐาน × สูงเอียง", vol: "1/3 × พื้นที่ฐาน × สูง" },
+            { name: "ทรง 12 หน้า (Dodecahedron)", area: "3 × √(25+10√5) × ด้าน²", vol: "(15+7√5)/4 × ด้าน³" }
+        ];
+
+        let currentIdx = 0;
+        let isProcessing = false; 
+        let arSystem = null;
+
+        const sceneEl = document.querySelector('a-scene');
+        const loadingOverlay = document.getElementById('loading');
+        
+        sceneEl.addEventListener('loaded', () => {
+            arSystem = sceneEl.systems["mindar-image-system"];
+        });
+
+        // --- Video & Links (อัปเดตลิงก์แล้ว) ---
+        const youtubeVideoID = "bPyxXEQ7A9M"; // <--- ลิงก์คลิปสอนที่คุณต้องการ
+        function openBookLink() { window.open("https://www.athometh.com/math/geometry/", "_blank"); } // <--- ลิงก์หนังสือ
+
+        function openVideoModal() {
+            document.getElementById('youtube-frame').src = `https://www.youtube.com/embed/${youtubeVideoID}?autoplay=1`;
+            document.getElementById('video-modal').style.display = 'flex';
+        }
+        function closeVideoModal() {
+            document.getElementById('youtube-frame').src = "";
+            document.getElementById('video-modal').style.display = 'none';
+        }
+
+        // --- Formula Functions ---
+        function openFormula() {
+            const data = geometryData[currentIdx];
+            document.getElementById('formula-title').innerText = data.name;
+            document.getElementById('formula-area').innerText = data.area;
+            document.getElementById('formula-volume').innerText = data.vol;
+            
+            document.getElementById('formula-modal').style.display = 'flex';
+        }
+        function closeFormulaModal() {
+            document.getElementById('formula-modal').style.display = 'none';
+        }
+
+        // --- Navigation Functions ---
+        function enterGallery() {
+            document.getElementById('intro-screen').style.display = 'none';
+            document.getElementById('gallery-ui').style.display = 'block';
+            updateGallery();
+        }
+
+        function enterMenu() {
+            document.getElementById('intro-screen').style.display = 'flex';
+            document.getElementById('gallery-ui').style.display = 'none';
+        }
+
+        function enterARDirectly() {
+            document.getElementById('intro-screen').style.display = 'none';
+            startAR();
+        }
+
+        function updateGallery() {
+            for(let i=1; i<=7; i++) {
+                let el = document.getElementById(`view-m${i}`);
+                if(el) el.setAttribute('visible', false);
+            }
+            let curr = document.getElementById(`view-m${currentIdx+1}`);
+            if(curr) curr.setAttribute('visible', true);
+            document.getElementById('model-name').innerText = geometryData[currentIdx].name;
+        }
+
+        function nextModel() { if(isProcessing) return; currentIdx = (currentIdx + 1) % geometryData.length; updateGallery(); }
+        function prevModel() { if(isProcessing) return; currentIdx = (currentIdx - 1 + geometryData.length) % geometryData.length; updateGallery(); }
+
+        async function startAR() {
+            if(isProcessing) return;
+            if(!arSystem) { alert("ระบบกำลังโหลด..."); return; }
+            isProcessing = true; loadingOverlay.style.display = 'flex';
+            if(document.getElementById('btn-open-ar')) document.getElementById('btn-open-ar').disabled = true;
+
+            try {
+                document.getElementById('intro-screen').style.display = 'none';
+                document.getElementById('gallery-ui').style.display = 'none';
+                document.getElementById('gallery-group').setAttribute('visible', false);
+                
+                document.getElementById('ar-group').setAttribute('visible', true);
+                await arSystem.start();
+                
+                document.getElementById('ar-ui').style.display = 'block';
+                document.getElementById('ar-guide').style.display = 'block';
+            } catch(e) {
+                alert("ไม่สามารถเปิดกล้องได้");
+                document.getElementById('gallery-group').setAttribute('visible', true);
+                document.getElementById('gallery-ui').style.display = 'block';
+            } finally {
+                loadingOverlay.style.display = 'none';
+                if(document.getElementById('btn-open-ar')) document.getElementById('btn-open-ar').disabled = false;
+                isProcessing = false;
+            }
+        }
+
+        function stopAR() {
+            window.location.reload(); // รีเซ็ตหน้าเว็บเพื่อแก้ปัญหาจอค้าง
+        }
+    </script>
+</body>
+</html>
