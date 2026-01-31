@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>AR Geometry Learning</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap" rel="stylesheet">
 
     <style>
-        body { margin: 0; font-family: 'Sarabun', sans-serif; overflow: hidden; touch-action: none; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; touch-action: none; }
         .bg-gradient { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); z-index: -2; opacity: 0.6; }
 
         /* UI Styles */
@@ -30,14 +30,42 @@
         .res-icon { width: 40px; height: 40px; background: #eee; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 20px; }
         .res-text h3 { margin: 0; font-size: 15px; color: #333; }
         .res-text span { font-size: 12px; color: #888; }
+        
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; display: none; flex-direction: column; justify-content: center; align-items: center; }
         .video-container { width: 90%; max-width: 600px; aspect-ratio: 16/9; background: black; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .formula-box { background: white; width: 85%; max-width: 400px; padding: 25px; border-radius: 25px; text-align: left; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
-        .formula-title { font-size: 22px; font-weight: 800; color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .formula-item { margin-bottom: 15px; }
-        .formula-label { font-size: 14px; color: #888; font-weight: bold; }
-        .formula-math { font-size: 18px; color: #333; font-family: 'Times New Roman', serif; font-style: italic; background: #f9f9f9; padding: 8px; border-radius: 8px; margin-top: 5px; }
-        .close-modal-btn { margin-top: 20px; padding: 10px 30px; border-radius: 50px; border: none; background: #ff4757; color: white; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; }
+        
+        /* Formula Box */
+        .formula-box {
+            background: white; width: 85%; max-width: 450px; padding: 25px; border-radius: 25px;
+            text-align: left; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            margin-top: auto; margin-bottom: 80px; 
+            transition: 0.3s;
+        }
+        #formula-modal { background: rgba(0,0,0,0.1); pointer-events: none; }
+        #formula-modal .formula-box { pointer-events: auto; }
+        .formula-title { font-size: 22px; font-weight: 800; color: #2c3e50; margin-bottom: 5px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .formula-desc { font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic; background: #f0f0f0; padding: 8px; border-radius: 8px; }
+        
+        .formula-item { margin-bottom: 20px; }
+        .formula-label { font-size: 14px; color: #888; font-weight: bold; margin-bottom: 5px;}
+        .formula-math-container { display: flex; align-items: center; justify-content: space-between; background: #f9f9f9; padding: 8px 12px; border-radius: 8px; border: 1px solid #eee; }
+        .formula-math { flex-grow: 1; font-size: 18px; color: #333; font-family: 'Times New Roman', serif; overflow-wrap: break-word;}
+        .formula-input, .formula-select {
+            width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 12px;
+            font-family: 'Sarabun', sans-serif; box-sizing: border-box; margin-bottom: 15px; transition: 0.3s;
+        }
+        .formula-input { font-family: 'Times New Roman', serif; font-style: italic; }
+        .formula-input:focus, .formula-select:focus { border-color: #23a6d5; outline: none; }
+        
+        .edit-actions { text-align: right; }
+        .btn-small { padding: 5px 10px; margin-left: 5px; border: none; border-radius: 15px; font-size: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-edit { background: #e1e1e1; color: #333; }
+        .btn-save { background: #2ed573; color: white; }
+        .btn-cancel { background: #ff4757; color: white; }
+        .hidden { display: none !important; }
+        .close-modal-btn { margin-top: 10px; padding: 12px 30px; border-radius: 50px; border: none; background: #333; color: white; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; transition: 0.2s;}
+        .btn-submit-blue { background: #23a6d5; }
+
         #gallery-ui { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: none; pointer-events: none; }
         #top-bar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 90%; text-align: center; pointer-events: auto; }
         #model-name-box { background: rgba(255,255,255,0.95); padding: 10px 25px; border-radius: 50px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: inline-block; }
@@ -46,7 +74,7 @@
         .ctrl-group { background: rgba(255,255,255,0.95); padding: 8px; border-radius: 40px; display: inline-flex; gap: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 15px; align-items: center;}
         .btn-ctrl { width: 50px; height: 50px; border-radius: 50%; border: none; background: #f1f2f6; font-size: 22px; cursor: pointer; color: #333; }
         .btn-formula { width: 50px; height: 50px; border-radius: 50%; border: none; background: #feca57; font-size: 24px; cursor: pointer; color: #333; box-shadow: 0 4px 10px rgba(254, 202, 87, 0.4); }
-        .btn-formula:active { transform: scale(0.9); }
+        .btn-student-input { width: 50px; height: 50px; border-radius: 50%; border: none; background: #48dbfb; font-size: 24px; cursor: pointer; color: #333; box-shadow: 0 4px 10px rgba(72, 219, 251, 0.4); }
         #btn-open-ar { background: #2ed573; color: white; border: none; padding: 15px 40px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 10px 20px rgba(46, 213, 115, 0.4); }
         #ar-ui { position: fixed; bottom: 30px; left: 0; width: 100%; text-align: center; z-index: 2000; display: none; }
         #btn-close-ar { background: #ff4757; color: white; padding: 12px 35px; border: none; border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4); }
@@ -55,6 +83,73 @@
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #2ed573; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
+
+    <script>
+        AFRAME.registerComponent("gesture-detector", {
+            schema: { element: { default: "" } },
+            init: function() {
+                this.targetElement = this.data.element && document.querySelector(this.data.element);
+                if (!this.targetElement) { this.targetElement = this.el; }
+                this.internalState = { previousState: null };
+                this.emitGestureEvent = this.emitGestureEvent.bind(this);
+                this.targetElement.addEventListener("touchstart", this.emitGestureEvent);
+                this.targetElement.addEventListener("touchend", this.emitGestureEvent);
+                this.targetElement.addEventListener("touchmove", this.emitGestureEvent);
+            },
+            remove: function() {
+                this.targetElement.removeEventListener("touchstart", this.emitGestureEvent);
+                this.targetElement.removeEventListener("touchend", this.emitGestureEvent);
+                this.targetElement.removeEventListener("touchmove", this.emitGestureEvent);
+            },
+            emitGestureEvent: function(event) {
+                const currentState = this.getTouchState(event);
+                const previousState = this.internalState.previousState;
+                const gestureContinues = previousState && currentState && currentState.touchCount == previousState.touchCount;
+                if (gestureContinues) {
+                    const eventDetail = {
+                        positionChange: { x: currentState.position.x - previousState.position.x, y: currentState.position.y - previousState.position.y },
+                    };
+                    if (currentState.spread) { eventDetail.spreadChange = currentState.spread - previousState.spread; }
+                    const eventName = (currentState.touchCount === 2) ? "twofingermove" : "onefingermove";
+                    this.el.emit(eventName, eventDetail);
+                    this.internalState.previousState = currentState;
+                }
+                if (currentState && !gestureContinues) { this.internalState.previousState = currentState; }
+                if (!currentState) { this.internalState.previousState = null; }
+            },
+            getTouchState: function(event) {
+                if (event.touches.length === 0) return null;
+                const touchList = [];
+                for (let i = 0; i < event.touches.length; i++) { touchList.push({ x: event.touches[i].clientX, y: event.touches[i].clientY }); }
+                const center = touchList.reduce((a, b) => ({ x: a.x + b.x, y: a.y + b.y }));
+                center.x /= touchList.length; center.y /= touchList.length;
+                let spread = null;
+                if (touchList.length >= 2) {
+                    const dx = touchList[0].x - touchList[1].x;
+                    const dy = touchList[0].y - touchList[1].y;
+                    spread = Math.sqrt(dx * dx + dy * dy);
+                }
+                return { touchCount: touchList.length, position: center, spread: spread };
+            }
+        });
+
+        AFRAME.registerComponent("gesture-handler", {
+            schema: { minScale: { default: 0.1 }, maxScale: { default: 8 } },
+            init: function() {
+                this.handleScale = this.handleScale.bind(this);
+                this.scaleFactor = 1;
+                this.el.sceneEl.addEventListener("twofingermove", this.handleScale);
+            },
+            remove: function() {
+                this.el.sceneEl.removeEventListener("twofingermove", this.handleScale);
+            },
+            handleScale: function(event) {
+                this.scaleFactor *= 1 + event.detail.spreadChange / event.detail.startSpread;
+                this.scaleFactor = Math.min(Math.max(this.scaleFactor, this.data.minScale), this.data.maxScale);
+                this.el.object3D.scale.set(this.scaleFactor, this.scaleFactor, this.scaleFactor);
+            }
+        });
+    </script>
 </head>
 <body>
 
@@ -84,7 +179,7 @@
             <div class="section-title">📚 สื่อเสริม</div>
             <div class="resource-btn" onclick="openVideoModal()">
                 <div class="res-icon" style="color: #ff0000;">📺</div>
-                <div class="res-text"><h3>คลิปการสอน วิชาคณิตศาสตร์</h3><span>ชมคลิปวิดีโอ</span></div>
+                <div class="res-text"><h3>คลิปการสอน จากสสวท</h3><span>ชมคลิปวิดีโอ</span></div>
             </div>
             <div class="resource-btn" onclick="openBookLink()">
                 <div class="res-icon" style="color: #4CAF50;">📖</div>
@@ -100,19 +195,72 @@
         <button class="close-modal-btn" style="width:auto; border:1px solid white; background:transparent;" onclick="closeVideoModal()">❌ ปิดหน้าต่าง</button>
     </div>
 
-    <div id="formula-modal" class="modal-overlay">
-        <div class="formula-box">
-            <div id="formula-title" class="formula-title">...</div>
-            <div class="formula-item"><div class="formula-label">📐 พื้นที่ผิว (Surface Area)</div><div id="formula-area" class="formula-math">...</div></div>
-            <div class="formula-item"><div class="formula-label">🧊 ปริมาตร (Volume)</div><div id="formula-volume" class="formula-math">...</div></div>
-            <button class="close-modal-btn" onclick="closeFormulaModal()">ตกลง / ปิด</button>
+    <div id="student-input-modal" class="modal-overlay">
+        <div class="formula-box" style="margin-top: 0; margin-bottom: 0;">
+            <div class="formula-title" style="color: #23a6d5;">📝 พิมพ์สูตรของคุณ</div>
+            
+            <div class="formula-item">
+                <label for="student-shape-select" class="formula-label">🔷 เลือกรูปทรง:</label>
+                <select id="student-shape-select" class="formula-select"></select>
+            </div>
+
+            <div class="formula-item">
+                 <label for="student-area-input" class="formula-label">📐 พื้นที่ผิว (Surface Area):</label>
+                 <input type="text" id="student-area-input" class="formula-input" placeholder="เช่น 4 * pi * r^2">
+            </div>
+            <div class="formula-item">
+                 <label for="student-vol-input" class="formula-label">🧊 ปริมาตร (Volume):</label>
+                 <input type="text" id="student-vol-input" class="formula-input" placeholder="เช่น (4/3) * pi * r^3">
+            </div>
+            
+            <button class="close-modal-btn btn-submit-blue" onclick="submitStudentFormulas()">แสดงผลลัพธ์</button>
+            <button class="close-modal-btn" style="background: #ff4757; margin-top: 10px;" onclick="closeStudentInputModal()">ยกเลิก</button>
         </div>
     </div>
 
-    <div id="ar-guide">
-        📷 <b>ส่องกล้องไปที่การ์ด</b>
-        <br><span>(โมเดลจะหมุนโชว์โดยอัตโนมัติ)</span>
+    <div id="formula-modal" class="modal-overlay">
+        <div class="formula-box">
+            <div id="formula-title" class="formula-title">...</div>
+            
+            <div id="formula-desc-container" class="formula-desc">
+                💡 <span id="formula-desc-text">...</span>
+            </div>
+            
+            <div class="formula-item">
+                <div class="formula-label">📐 พื้นที่ผิว (Surface Area)</div>
+                <div id="area-display-group" class="formula-math-container">
+                    <span id="formula-area-text" class="formula-math">...</span>
+                    <button class="btn-small btn-edit db-edit-btn" onclick="enableEditMode('area')">✏️ แก้ไข</button>
+                </div>
+                <div id="area-edit-group" class="hidden db-edit-group">
+                    <input type="text" id="area-input" class="formula-input" style="margin-bottom: 5px;">
+                    <div class="edit-actions">
+                        <button class="btn-small btn-save" onclick="saveFormula('area')">✅ บันทึก</button>
+                        <button class="btn-small btn-cancel" onclick="cancelEdit('area')">❌ ยกเลิก</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="formula-item">
+                <div class="formula-label">🧊 ปริมาตร (Volume)</div>
+                <div id="volume-display-group" class="formula-math-container">
+                    <span id="formula-volume-text" class="formula-math">...</span>
+                    <button class="btn-small btn-edit db-edit-btn" onclick="enableEditMode('volume')">✏️ แก้ไข</button>
+                </div>
+                <div id="volume-edit-group" class="hidden db-edit-group">
+                    <input type="text" id="volume-input" class="formula-input" style="margin-bottom: 5px;">
+                    <div class="edit-actions">
+                        <button class="btn-small btn-save" onclick="saveFormula('volume')">✅ บันทึก</button>
+                        <button class="btn-small btn-cancel" onclick="cancelEdit('volume')">❌ ยกเลิก</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="close-modal-btn" onclick="closeFormulaModal()">ปิดหน้าต่าง</button>
+        </div>
     </div>
+
+    <div id="ar-guide">📷 <b>ส่องกล้องไปที่การ์ด</b><br><span>(โมเดลจะหมุนอัตโนมัติ / ใช้นิ้วซูมได้)</span></div>
 
     <div id="gallery-ui">
         <div id="top-bar"><div id="model-name-box"><span id="model-name">...</span></div></div>
@@ -120,21 +268,20 @@
             <div class="ctrl-group">
                 <button class="btn-ctrl" onclick="prevModel()">◀</button>
                 <button class="btn-ctrl" onclick="enterMenu()">🏠</button>
-                <button class="btn-formula" onclick="openFormula()">📐</button>
+                <button class="btn-formula" onclick="openFormula()" title="ดูสูตรเฉลย">📐</button>
+                <button class="btn-student-input" onclick="openStudentInputModal()" title="พิมพ์สูตรเอง">📝</button>
                 <button class="btn-ctrl" onclick="nextModel()">▶</button>
             </div>
-            <br>
-            <button id="btn-open-ar" onclick="startAR()">📷 สแกน</button>
+            <br><button id="btn-open-ar" onclick="startAR()">📷 สแกน</button>
         </div>
     </div>
 
-    <div id="ar-ui">
-        <button id="btn-close-ar" onclick="stopAR()">❌ ปิดกล้อง</button>
-    </div>
+    <div id="ar-ui"><button id="btn-close-ar" onclick="stopAR()">❌ ปิดกล้อง</button></div>
 
     <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiError: no; uiScanning: no; filterMinCF: 0.0001; missTolerance: 10;" 
              color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" 
-             vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+             vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false"
+             gesture-detector> 
         
         <a-assets>
             <a-asset-item id="glb-1" src="./m1.glb"></a-asset-item>
@@ -162,40 +309,61 @@
         </a-camera>
 
         <a-entity id="ar-group" visible="false">
-            <a-entity mindar-image-target="targetIndex: 0">
-                <a-gltf-model src="#glb-1" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear"></a-gltf-model>
-            </a-entity>
-            <a-entity mindar-image-target="targetIndex: 1">
-                <a-gltf-model src="#glb-2" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear"></a-gltf-model>
-            </a-entity>
-            <a-entity mindar-image-target="targetIndex: 2">
-                <a-gltf-model src="#glb-3" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear"></a-gltf-model>
-            </a-entity>
-            <a-entity mindar-image-target="targetIndex: 3">
-                <a-gltf-model src="#glb-4" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear"></a-gltf-model>
-            </a-entity>
-            <a-entity mindar-image-target="targetIndex: 4">
-                <a-gltf-model src="#glb-5" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear"></a-gltf-model>
-            </a-entity>
-            <a-entity mindar-image-target="targetIndex: 5">
-                <a-gltf-model src="#glb-6" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear"></a-gltf-model>
-            </a-entity>
-            <a-entity mindar-image-target="targetIndex: 6">
-                <a-gltf-model src="#glb-7" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear"></a-gltf-model>
-            </a-entity>
+            <a-entity mindar-image-target="targetIndex: 0"><a-gltf-model src="#glb-1" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 1"><a-gltf-model src="#glb-2" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 2"><a-gltf-model src="#glb-3" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 3"><a-gltf-model src="#glb-4" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 4"><a-gltf-model src="#glb-5" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 5"><a-gltf-model src="#glb-6" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 6"><a-gltf-model src="#glb-7" scale="0.5 0.5 0.5" position="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear" gesture-handler></a-gltf-model></a-entity>
         </a-entity>
-
     </a-scene>
 
     <script>
-        const geometryData = [
-            { name: "ลูกบาศก์ (Cube)", area: "6 × ด้าน²", vol: "ด้าน³" },
-            { name: "ทรงกลม (Sphere)", area: "4πr²", vol: "4/3 × πr³" },
-            { name: "ทรงกระบอก (Cylinder)", area: "2πrh + 2πr²", vol: "πr²h" },
-            { name: "กรวย (Cone)", area: "πrl + πr²", vol: "1/3 × πr²h" },
-            { name: "วงแหวน (Torus)", area: "4π²Rr", vol: "2π²Rr²" },
-            { name: "พีระมิด (Pyramid)", area: "ฐาน + 1/2 × รอบฐาน × สูงเอียง", vol: "1/3 × พื้นที่ฐาน × สูง" },
-            { name: "ทรง 12 หน้า (Dodecahedron)", area: "3 × √(25+10√5) × ด้าน²", vol: "(15+7√5)/4 × ด้าน³" }
+        // --- 📊 ปรับปรุงข้อมูลสูตรให้เป็น HTML สวยงาม พร้อมคำอธิบายตัวแปร ---
+        let geometryData = [
+            { 
+                name: "ลูกบาศก์ (Cube)", 
+                area: "6s<sup>2</sup>", 
+                vol: "s<sup>3</sup>", 
+                desc: "s = ความยาวด้าน (Side)" 
+            },
+            { 
+                name: "ทรงกลม (Sphere)", 
+                area: "4πr<sup>2</sup>", 
+                vol: "4/3 × πr<sup>3</sup>", 
+                desc: "r = รัศมี (Radius), π ≈ 3.14" 
+            },
+            { 
+                name: "ทรงกระบอก (Cylinder)", 
+                area: "2πrh + 2πr<sup>2</sup>", 
+                vol: "πr<sup>2</sup>h", 
+                desc: "r = รัศมีฐาน, h = ความสูง" 
+            },
+            { 
+                name: "กรวย (Cone)", 
+                area: "πrl + πr<sup>2</sup>", 
+                vol: "1/3 × πr<sup>2</sup>h", 
+                desc: "r = รัศมี, h = สูงตรง, l = สูงเอียง" 
+            },
+            { 
+                name: "วงแหวน (Torus)", 
+                area: "4π<sup>2</sup>Rr", 
+                vol: "2π<sup>2</sup>Rr<sup>2</sup>", 
+                desc: "R = รัศมีวงใหญ่, r = รัศมีท่อวงเล็ก" 
+            },
+            { 
+                name: "พีระมิด (Pyramid)", 
+                area: "พื้นที่ฐาน + (1/2 × รอบฐาน × l)", 
+                vol: "1/3 × พื้นที่ฐาน × h", 
+                desc: "h = สูงตรง, l = สูงเอียง" 
+            },
+            { 
+                name: "ทรง 12 หน้า (Dodecahedron)", 
+                area: "3 × √(25+10√5) × s<sup>2</sup>", 
+                vol: "((15+7√5)/4) × s<sup>3</sup>", 
+                desc: "s = ความยาวด้าน" 
+            }
         ];
 
         let currentIdx = 0;
@@ -204,28 +372,102 @@
         const sceneEl = document.querySelector('a-scene');
         const loadingOverlay = document.getElementById('loading');
         
-        sceneEl.addEventListener('loaded', () => {
-            arSystem = sceneEl.systems["mindar-image-system"];
-        });
+        sceneEl.addEventListener('loaded', () => { arSystem = sceneEl.systems["mindar-image-system"]; });
+
+        window.onload = function() {
+            const selectEl = document.getElementById('student-shape-select');
+            geometryData.forEach((item, index) => {
+                const option = document.createElement("option");
+                option.value = index;
+                option.text = item.name;
+                selectEl.appendChild(option);
+            });
+        };
 
         const youtubeVideoID = "bPyxXEQ7A9M"; 
         function openBookLink() { window.open("https://www.athometh.com/math/geometry/", "_blank"); }
+        function openVideoModal() { document.getElementById('youtube-frame').src = `https://www.youtube.com/embed/${youtubeVideoID}?autoplay=1`; document.getElementById('video-modal').style.display = 'flex'; }
+        function closeVideoModal() { document.getElementById('youtube-frame').src = ""; document.getElementById('video-modal').style.display = 'none'; }
 
-        function openVideoModal() {
-            document.getElementById('youtube-frame').src = `https://www.youtube.com/embed/${youtubeVideoID}?autoplay=1`;
-            document.getElementById('video-modal').style.display = 'flex';
+        function openStudentInputModal() {
+            document.getElementById('student-shape-select').value = currentIdx;
+            document.getElementById('student-area-input').value = "";
+            document.getElementById('student-vol-input').value = "";
+            document.getElementById('student-input-modal').style.display = 'flex';
         }
-        function closeVideoModal() {
-            document.getElementById('youtube-frame').src = "";
-            document.getElementById('video-modal').style.display = 'none';
+        function closeStudentInputModal() { document.getElementById('student-input-modal').style.display = 'none'; }
+
+        function submitStudentFormulas() {
+            const userArea = document.getElementById('student-area-input').value || "(ไม่ได้ระบุ)";
+            const userVol = document.getElementById('student-vol-input').value || "(ไม่ได้ระบุ)";
+            const selectedShapeIndex = parseInt(document.getElementById('student-shape-select').value);
+            
+            currentIdx = selectedShapeIndex;
+            updateGallery();
+
+            closeStudentInputModal();
+            openFormula(userArea, userVol);
+            playPopAnimation();
         }
-        function openFormula() {
-            const data = geometryData[currentIdx];
-            document.getElementById('formula-title').innerText = data.name;
-            document.getElementById('formula-area').innerText = data.area;
-            document.getElementById('formula-volume').innerText = data.vol;
+
+        function playPopAnimation() {
+            let curr = document.getElementById(`view-m${currentIdx+1}`);
+            if(curr) {
+                curr.setAttribute('scale', '0 0 0');
+                curr.removeAttribute('animation__pop');
+                setTimeout(() => {
+                    curr.setAttribute('animation__pop', 'property: scale; from: 0 0 0; to: 0.5 0.5 0.5; dur: 1200; easing: easeOutElastic');
+                }, 50);
+            }
+        }
+
+        function openFormula(studentArea = null, studentVol = null) {
+            const isStudentInput = studentArea !== null || studentVol !== null;
+            let areaText, volText, titleText, descText;
+
+            if (isStudentInput) {
+                titleText = "ผลลัพธ์ที่คุณพิมพ์ (Your Input)";
+                areaText = studentArea;
+                volText = studentVol;
+                descText = "สูตรที่คุณจำได้ (ลองเทียบกับเฉลยดูนะ)";
+                document.querySelectorAll('.db-edit-btn').forEach(el => el.classList.add('hidden'));
+            } else {
+                const data = geometryData[currentIdx];
+                titleText = data.name;
+                areaText = data.area;
+                volText = data.vol;
+                descText = data.desc; // ดึงคำอธิบายตัวแปรมาแสดง
+                document.querySelectorAll('.db-edit-btn').forEach(el => el.classList.remove('hidden'));
+            }
+
+            document.getElementById('formula-title').innerText = titleText;
+            document.getElementById('formula-desc-text').innerHTML = descText; // ใช้ innerHTML เพื่อรองรับตัวยก
+            document.getElementById(`formula-area-text`).innerHTML = areaText;
+            document.getElementById(`formula-volume-text`).innerHTML = volText;
+            
+            document.getElementById(`area-display-group`).classList.remove('hidden');
+            document.getElementById(`area-edit-group`).classList.add('hidden');
+            document.getElementById(`volume-display-group`).classList.remove('hidden');
+            document.getElementById(`volume-edit-group`).classList.add('hidden');
+            
             document.getElementById('formula-modal').style.display = 'flex';
         }
+
+        function enableEditMode(type) {
+            const data = geometryData[currentIdx];
+            // ต้องลบ HTML tag ออกก่อนนำไปใส่ input เพื่อให้แก้ไขง่าย
+            let cleanValue = data[type === 'area' ? 'area' : 'vol'].replace(/<sup>/g, '^').replace(/<\/sup>/g, '');
+            document.getElementById(`${type}-input`).value = cleanValue;
+            document.getElementById(`${type}-display-group`).classList.add('hidden');
+            document.getElementById(`${type}-edit-group`).classList.remove('hidden');
+        }
+        function saveFormula(type) {
+            const newValue = document.getElementById(`${type}-input`).value;
+            // บันทึกกลับไปเป็นข้อความธรรมดา (หรือจะเขียนฟังก์ชันแปลง ^ เป็น sup ก็ได้ แต่เพื่อความง่ายให้เก็บ text)
+            if (type === 'area') { geometryData[currentIdx].area = newValue; } else { geometryData[currentIdx].vol = newValue; }
+            openFormula();
+        }
+        function cancelEdit(type) { openFormula(); }
         function closeFormulaModal() { document.getElementById('formula-modal').style.display = 'none'; }
 
         function enterGallery() { document.getElementById('intro-screen').style.display = 'none'; document.getElementById('gallery-ui').style.display = 'block'; updateGallery(); }
@@ -256,9 +498,7 @@
                 document.getElementById('gallery-ui').style.display = 'none';
                 document.getElementById('gallery-group').setAttribute('visible', false);
                 document.getElementById('ar-group').setAttribute('visible', true);
-                
                 await arSystem.start();
-                
                 document.getElementById('ar-ui').style.display = 'block';
                 document.getElementById('ar-guide').style.display = 'block';
             } catch(e) {
@@ -271,10 +511,7 @@
                 isProcessing = false;
             }
         }
-
-        function stopAR() {
-            window.location.reload(); 
-        }
+        function stopAR() { window.location.reload(); }
     </script>
 </body>
 </html>
