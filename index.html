@@ -59,6 +59,7 @@
         .close-modal-btn { margin-top: 10px; padding: 12px 30px; border-radius: 50px; border: none; background: #333; color: white; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; transition: 0.2s;}
         .btn-submit-blue { background: #23a6d5; }
 
+        /* UI ควบคุม Gallery & AR */
         #gallery-ui { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: none; pointer-events: none; }
         #top-bar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 90%; text-align: center; pointer-events: auto; }
         #model-name-box { background: rgba(255,255,255,0.95); padding: 10px 25px; border-radius: 50px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: inline-block; }
@@ -133,19 +134,20 @@
             }
         });
 
-        // --- 2. Gesture Handler (ซูม + หมุน) 🔥 อัปเกรดใหม่ 🔥 ---
+        // --- 2. Gesture Handler (ซูม + หมุน) 🔥 ปรับปรุงความเร็ว (Sensitivity Fix) 🔥 ---
         AFRAME.registerComponent("gesture-handler", {
             schema: { 
                 minScale: { default: 0.1 }, 
                 maxScale: { default: 8 },
-                rotationFactor: { default: 5 } // ความไวในการหมุน
+                // ⚠️ ลดค่าการหมุนลงจาก 5 เหลือ 0.05 (ช้าลง 100 เท่าเพื่อให้ลื่นนวล)
+                rotationFactor: { default: 0.05 } 
             },
             init: function() {
                 this.handleScale = this.handleScale.bind(this);
                 this.handleRotation = this.handleRotation.bind(this);
 
                 this.el.sceneEl.addEventListener("twofingermove", this.handleScale);
-                this.el.sceneEl.addEventListener("onefingermove", this.handleRotation); // เพิ่มการหมุน
+                this.el.sceneEl.addEventListener("onefingermove", this.handleRotation);
             },
             remove: function() { 
                 this.el.sceneEl.removeEventListener("twofingermove", this.handleScale); 
@@ -167,12 +169,14 @@
             },
             handleRotation: function(event) {
                 if (event.detail.positionChange) {
-                    // หมุนแกน Y (แนวนอน) และ X (แนวตั้ง)
                     const rotation = this.el.object3D.rotation;
                     const factor = this.data.rotationFactor;
                     
+                    // หมุนแนวนอน (แกน Y) เป็นหลัก
                     rotation.y += event.detail.positionChange.x * factor;
-                    rotation.x += event.detail.positionChange.y * factor;
+                    
+                    // หมุนแนวตั้ง (แกน X) ลดลงอีกครึ่งนึงเพื่อให้คุมง่าย
+                    rotation.x += event.detail.positionChange.y * (factor * 0.5);
                 }
             }
         });
@@ -206,11 +210,11 @@
             <div class="section-title">📚 สื่อเสริม</div>
             <div class="resource-btn" onclick="openVideoModal()">
                 <div class="res-icon" style="color: #ff0000;">📺</div>
-                <div class="res-text"><h3>คลิปการสอน จากสสวท.</h3><span>ชมคลิปวิดีโอ</span></div>
+                <div class="res-text"><h3>วิธีใช้งาน</h3><span>ชมคลิปวิดีโอ</span></div>
             </div>
             <div class="resource-btn" onclick="openBookLink()">
                 <div class="res-icon" style="color: #4CAF50;">📖</div>
-                <div class="res-text"><h3>สรุปสูตรเรขาคณิตสองมิติและสามมิติ</h3><span>อ่านบทเรียนเพิ่มเติม</span></div>
+                <div class="res-text"><h3>หนังสือเรียน</h3><span>อ่านบทเรียนเพิ่มเติม</span></div>
             </div>
         </div>
     </div>
