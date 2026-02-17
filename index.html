@@ -3,91 +3,142 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>AR Geometry Learning</title>
+    
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap" rel="stylesheet">
 
     <style>
-        /* แก้ภาพกลับด้านบนคอม */
+        /* --- Base Setup --- */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Sarabun', sans-serif; background-color: #000; }
         video { transform: scaleX(1) !important; }
-        
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; touch-action: none; font-family: 'Sarabun', sans-serif; }
-        .bg-gradient { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); z-index: -2; opacity: 0.6; }
 
-        /* UI Styles */
-        #intro-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(10px); }
-        .glass-card { background: rgba(255, 255, 255, 0.95); padding: 30px 20px; border-radius: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); text-align: center; max-width: 420px; width: 100%; border: 1px solid rgba(255, 255, 255, 0.8); overflow-y: auto; max-height: 95vh; }
-        .app-header { margin-bottom: 20px; }
-        .app-logo { font-size: 50px; margin-bottom: 5px; display: inline-block; animation: bounce 2s infinite; }
-        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
-        h1 { margin: 0; color: #2c3e50; font-size: 26px; font-weight: 800; }
-        p { margin: 5px 0 0 0; color: #666; font-size: 14px; }
-        .section-title { text-align: left; font-size: 14px; font-weight: bold; color: #555; margin: 15px 5px 5px 5px; }
-        .main-menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .menu-btn { background: #fff; border: 2px solid #f0f0f0; padding: 15px 5px; border-radius: 20px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 5px rgba(0,0,0,0.03); }
-        .menu-btn:hover { border-color: #23a6d5; background: #e0f7fa; transform: translateY(-3px); }
-        .menu-icon { font-size: 32px; margin-bottom: 5px; }
-        .menu-title { font-weight: bold; font-size: 16px; color: #333; }
-        .menu-desc { font-size: 12px; color: #888; }
-        .resource-btn { width: 100%; padding: 12px; margin-bottom: 8px; background: white; border: 1px solid #ddd; border-radius: 15px; display: flex; align-items: center; gap: 15px; text-align: left; cursor: pointer; transition: 0.2s; box-sizing: border-box; }
-        .res-icon { width: 40px; height: 40px; background: #eee; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 20px; }
-        .res-text h3 { margin: 0; font-size: 15px; color: #333; }
-        .res-text span { font-size: 12px; color: #888; }
-        
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; display: none; flex-direction: column; justify-content: center; align-items: center; }
-        .video-container { width: 90%; max-width: 600px; aspect-ratio: 16/9; background: black; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        
-        .formula-box { background: white; width: 85%; max-width: 450px; padding: 25px; border-radius: 25px; text-align: left; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.3); margin-top: auto; margin-bottom: 80px; transition: 0.3s; }
-        #formula-modal { background: rgba(0,0,0,0.1); pointer-events: none; }
-        #formula-modal .formula-box { pointer-events: auto; }
-        .formula-title { font-size: 22px; font-weight: 800; color: #2c3e50; margin-bottom: 5px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .formula-desc { font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic; background: #f0f0f0; padding: 8px; border-radius: 8px; }
-        .formula-item { margin-bottom: 20px; }
-        .formula-label { font-size: 14px; color: #888; font-weight: bold; margin-bottom: 5px;}
-        .formula-math-container { display: flex; align-items: center; justify-content: space-between; background: #f9f9f9; padding: 8px 12px; border-radius: 8px; border: 1px solid #eee; }
-        .formula-math { flex-grow: 1; font-size: 18px; color: #333; font-family: 'Times New Roman', serif; overflow-wrap: break-word;}
-        .formula-input, .formula-select { width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 12px; font-family: 'Sarabun', sans-serif; box-sizing: border-box; margin-bottom: 15px; transition: 0.3s; }
-        .formula-input { font-family: 'Times New Roman', serif; font-style: italic; }
-        .formula-input:focus, .formula-select:focus { border-color: #23a6d5; outline: none; }
-        
-        .edit-actions { text-align: right; }
-        .btn-small { padding: 5px 10px; margin-left: 5px; border: none; border-radius: 15px; font-size: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-edit { background: #e1e1e1; color: #333; }
-        .btn-save { background: #2ed573; color: white; }
-        .btn-cancel { background: #ff4757; color: white; }
-        .hidden { display: none !important; }
-        .close-modal-btn { margin-top: 10px; padding: 12px 30px; border-radius: 50px; border: none; background: #333; color: white; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; transition: 0.2s;}
-        .btn-submit-blue { background: #23a6d5; }
-
-        /* UI ควบคุม Gallery & AR */
-        #gallery-ui { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: none; pointer-events: none; }
-        #top-bar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 90%; text-align: center; pointer-events: auto; }
-        #model-name-box { background: rgba(255,255,255,0.95); padding: 10px 25px; border-radius: 50px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: inline-block; }
-        #model-name { font-size: 20px; font-weight: 800; color: #333; }
-        #bottom-controls { position: absolute; bottom: 30px; width: 100%; text-align: center; pointer-events: auto; }
-        .ctrl-group { background: rgba(255,255,255,0.95); padding: 8px; border-radius: 40px; display: inline-flex; gap: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 15px; align-items: center;}
-        .btn-ctrl { width: 50px; height: 50px; border-radius: 50%; border: none; background: #f1f2f6; font-size: 22px; cursor: pointer; color: #333; }
-        .btn-formula { width: 50px; height: 50px; border-radius: 50%; border: none; background: #feca57; font-size: 24px; cursor: pointer; color: #333; box-shadow: 0 4px 10px rgba(254, 202, 87, 0.4); }
-        .btn-student-input { width: 50px; height: 50px; border-radius: 50%; border: none; background: #48dbfb; font-size: 24px; cursor: pointer; color: #333; box-shadow: 0 4px 10px rgba(72, 219, 251, 0.4); }
-        #btn-open-ar { background: #2ed573; color: white; border: none; padding: 15px 40px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 10px 20px rgba(46, 213, 115, 0.4); pointer-events: auto; }
-        #ar-ui { position: fixed; bottom: 30px; left: 0; width: 100%; text-align: center; z-index: 2000; display: none; pointer-events: none; }
-        #ar-ui button { pointer-events: auto; } 
-        #btn-close-ar { background: #ff4757; color: white; padding: 12px 35px; border: none; border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4); }
-        
-        #btn-sound-toggle {
-            background: #ffffff; color: #333; width: 50px; height: 50px; border-radius: 50%; border: none; 
-            font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
-            display: none; position: absolute; right: 20px; bottom: 100px; z-index: 2005; pointer-events: auto;
+        /* พื้นหลัง */
+        .bg-gradient { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); 
+            z-index: 1; pointer-events: none;
         }
 
-        #ar-guide { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: rgba(0,0,0,0.7); color: white; padding: 12px; border-radius: 30px; text-align: center; z-index: 2000; display: none; backdrop-filter: blur(5px); pointer-events: none; }
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; color: white; justify-content: center; align-items: center; font-size: 20px; flex-direction: column; }
+        /* --- 3D Scene --- */
+        a-scene {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 50; 
+        }
+
+        /* --- UI Layers (Super High Z-Index) --- */
+        .ui-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 99999; 
+            pointer-events: none; /* ให้ทะลุไปโดน 3D ได้ในที่ว่าง */
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        /* บังคับให้ปุ่มทุกปุ่มกดได้ */
+        button, .menu-btn, .resource-btn, .clickable {
+            pointer-events: auto !important; 
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* --- Intro Screen --- */
+        #intro-screen {
+            background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(10px);
+            pointer-events: auto; /* กดพื้นหลังหน้านี้ได้ */
+        }
+
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.95); padding: 30px 20px; border-radius: 30px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15); text-align: center; 
+            max-width: 420px; width: 90%; border: 1px solid rgba(255, 255, 255, 0.8); 
+            overflow-y: auto; max-height: 90vh; pointer-events: auto;
+        }
+
+        /* --- Gallery Controls --- */
+        #top-bar { position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; }
+        #model-name-box { 
+            background: rgba(255,255,255,0.95); padding: 10px 25px; border-radius: 50px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: inline-block; pointer-events: auto;
+        }
+        
+        #bottom-controls { position: absolute; bottom: 30px; width: 100%; text-align: center; pointer-events: none; }
+        
+        .ctrl-group { 
+            background: rgba(255,255,255,0.9); padding: 10px; border-radius: 40px; 
+            display: inline-flex; gap: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+            pointer-events: auto; 
+        }
+        
+        .btn-ctrl { width: 50px; height: 50px; border-radius: 50%; border: none; background: #f1f2f6; font-size: 22px; color: #333; }
+        .btn-ctrl:active { background: #dcdde1; transform: scale(0.95); }
+        .btn-formula { width: 50px; height: 50px; border-radius: 50%; border: none; background: #feca57; font-size: 24px; color: #333; box-shadow: 0 4px 10px rgba(254, 202, 87, 0.4); }
+
+        #btn-open-ar { 
+            background: #2ed573; color: white; border: none; padding: 15px 40px; 
+            font-size: 18px; font-weight: bold; border-radius: 50px; 
+            box-shadow: 0 10px 20px rgba(46, 213, 115, 0.4); margin-top: 15px;
+            pointer-events: auto;
+        }
+
+        /* --- AR UI --- */
+        #btn-close-ar { 
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #ff4757; color: white; padding: 12px 35px; border: none; border-radius: 50px; 
+            font-size: 18px; font-weight: bold; box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4); 
+            pointer-events: auto; z-index: 100000;
+        }
+
+        #btn-sound-toggle {
+            position: absolute; right: 20px; bottom: 100px;
+            background: #ffffff; color: #333; width: 50px; height: 50px; border-radius: 50%; border: none; 
+            font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+            display: none; pointer-events: auto;
+        }
+
+        /* --- Modals --- */
+        .modal-overlay { 
+            background: rgba(0,0,0,0.85); display: none; 
+            pointer-events: auto; /* กดปิด Modal ได้ */
+        }
+        .formula-box { 
+            background: white; width: 85%; max-width: 450px; padding: 25px; border-radius: 25px; 
+            text-align: left; box-shadow: 0 10px 40px rgba(0,0,0,0.3); pointer-events: auto;
+        }
+
+        /* --- Loading --- */
+        #loading { background: rgba(0,0,0,0.9); color: white; display: none; z-index: 200000; pointer-events: auto;}
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #2ed573; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* General Styles */
+        h1 { margin: 0; color: #2c3e50; font-size: 24px; font-weight: 800; }
+        p { margin: 5px 0 0 0; color: #666; font-size: 14px; }
+        .menu-btn { 
+            background: #fff; border: 2px solid #f0f0f0; padding: 15px; border-radius: 20px; 
+            display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 5px rgba(0,0,0,0.03); 
+        }
+        .menu-btn:active { transform: scale(0.98); background: #f0f7fa; }
+        .main-menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .resource-btn { 
+            width: 100%; padding: 12px; margin-bottom: 8px; background: white; border: 1px solid #ddd; 
+            border-radius: 15px; display: flex; align-items: center; gap: 15px; text-align: left; box-sizing: border-box; 
+        }
+        
+        .hidden { display: none !important; }
+        .close-modal-btn { margin-top: 15px; padding: 10px 30px; border-radius: 50px; border: none; background: #333; color: white; width: 100%; font-size: 16px;}
+        
+        .formula-item { margin-bottom: 15px; }
+        .formula-label { font-size: 14px; color: #888; font-weight: bold; margin-bottom: 5px; }
+        .formula-math-container { background: #f9f9f9; padding: 10px; border-radius: 10px; border: 1px solid #eee; text-align: center; }
+        .formula-math { font-size: 18px; color: #23a6d5; font-weight: bold; font-family: 'Times New Roman', serif; }
     </style>
 
     <script>
-        // --- 1. Gesture Detector (ตัวจับนิ้ว) ---
+        // --- System Components ---
+        
+        // 1. Gesture Detector (Touch)
         AFRAME.registerComponent("gesture-detector", {
             schema: { element: { default: "" } },
             init: function() {
@@ -134,18 +185,12 @@
             }
         });
 
-        // --- 2. Gesture Handler (ซูม + หมุน) 🔥 ปรับปรุงความเร็ว (Sensitivity Fix) 🔥 ---
+        // 2. Gesture Handler (Zoom/Rotate)
         AFRAME.registerComponent("gesture-handler", {
-            schema: { 
-                minScale: { default: 0.1 }, 
-                maxScale: { default: 8 },
-                // ⚠️ ลดค่าการหมุนลงจาก 5 เหลือ 0.05 (ช้าลง 100 เท่าเพื่อให้ลื่นนวล)
-                rotationFactor: { default: 0.05 } 
-            },
+            schema: { minScale: { default: 0.1 }, maxScale: { default: 8 }, rotationFactor: { default: 0.05 } },
             init: function() {
                 this.handleScale = this.handleScale.bind(this);
                 this.handleRotation = this.handleRotation.bind(this);
-
                 this.el.sceneEl.addEventListener("twofingermove", this.handleScale);
                 this.el.sceneEl.addEventListener("onefingermove", this.handleRotation);
             },
@@ -156,13 +201,10 @@
             handleScale: function(event) {
                 const spreadChange = event.detail.spreadChange;
                 if (!spreadChange) return;
-                
                 const sensitivity = 0.005; 
                 const scaleMultiplier = 1 + (spreadChange * sensitivity);
-                
                 const currentScale = this.el.object3D.scale;
                 const newScale = currentScale.x * scaleMultiplier;
-
                 if (newScale >= this.data.minScale && newScale <= this.data.maxScale) {
                     this.el.object3D.scale.set(newScale, newScale, newScale);
                 }
@@ -171,11 +213,7 @@
                 if (event.detail.positionChange) {
                     const rotation = this.el.object3D.rotation;
                     const factor = this.data.rotationFactor;
-                    
-                    // หมุนแนวนอน (แกน Y) เป็นหลัก
                     rotation.y += event.detail.positionChange.x * factor;
-                    
-                    // หมุนแนวตั้ง (แกน X) ลดลงอีกครึ่งนึงเพื่อให้คุมง่าย
                     rotation.x += event.detail.positionChange.y * (factor * 0.5);
                 }
             }
@@ -185,126 +223,110 @@
 <body>
 
     <div class="bg-gradient"></div>
-    <div id="loading"><div class="spinner"></div>กำลังดำเนินการ...</div>
+    <div id="loading" class="ui-container"><div class="spinner"></div>กำลังโหลด...</div>
 
-    <div id="intro-screen">
-        <div class="glass-card">
+    <div id="intro-screen" class="ui-container">
+        <div class="glass-card clickable">
             <div class="app-header">
                 <div class="app-logo">🧊</div>
                 <h1>AR Geometry</h1>
                 <p>สื่อการเรียนรู้เรขาคณิต 3 มิติ</p>
             </div>
-            <div class="section-title">🚀 เข้าสู่บทเรียน</div>
+            
+            <p style="text-align:left; font-weight:bold; color:#555; margin-bottom:10px;">🚀 เข้าสู่บทเรียน</p>
             <div class="main-menu-grid">
-                <div class="menu-btn" onclick="enterGallery()">
-                    <div class="menu-icon">👀</div>
-                    <div class="menu-title">โหมด 3D</div>
-                    <div class="menu-desc">หมุนดูโมเดล</div>
+                <div class="menu-btn clickable" onclick="enterGallery()">
+                    <div style="font-size:30px;">👀</div>
+                    <div style="font-weight:bold;">โหมด 3D</div>
+                    <div style="font-size:12px; color:#888;">หมุนดูโมเดล</div>
                 </div>
-                <div class="menu-btn" onclick="enterARDirectly()">
-                    <div class="menu-icon">📷</div>
-                    <div class="menu-title">โหมด AR</div>
-                    <div class="menu-desc">ส่อง Marker</div>
+                <div class="menu-btn clickable" onclick="enterARDirectly()">
+                    <div style="font-size:30px;">📷</div>
+                    <div style="font-weight:bold;">โหมด AR</div>
+                    <div style="font-size:12px; color:#888;">ส่อง Marker</div>
                 </div>
             </div>
-            <div class="section-title">📚 สื่อเสริม</div>
-            <div class="resource-btn" onclick="openVideoModal()">
-                <div class="res-icon" style="color: #ff0000;">📺</div>
-                <div class="res-text"><h3>คลิปการสอนการแปลงทางเรขาคณิต</h3><span>ชมคลิปวิดีโอ</span></div>
+
+            <p style="text-align:left; font-weight:bold; color:#555; margin:20px 0 10px 0;">📚 สื่อเสริม</p>
+            <div class="resource-btn clickable" onclick="openVideoModal()">
+                <div style="font-size:20px;">📺</div>
+                <div>
+                    <div style="font-weight:bold;">คลิปการสอน</div>
+                    <div style="font-size:12px; color:#888;">การแปลงทางเรขาคณิต</div>
+                </div>
             </div>
-            <div class="resource-btn" onclick="openBookLink()">
-                <div class="res-icon" style="color: #4CAF50;">📖</div>
-                <div class="res-text"><h3>สรุปสูตรเรขาคณิตสองมิติและสามมิติ</h3><span>อ่านบทเรียนเพิ่มเติม</span></div>
+            <div class="resource-btn clickable" onclick="openBookLink()">
+                <div style="font-size:20px;">📖</div>
+                <div>
+                    <div style="font-weight:bold;">สรุปสูตร</div>
+                    <div style="font-size:12px; color:#888;">เรขาคณิต 2 และ 3 มิติ</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="video-modal" class="modal-overlay">
-        <div class="video-container">
+    <div id="video-modal" class="modal-overlay ui-container">
+        <div class="video-container clickable" style="width:90%; max-width:600px; aspect-ratio:16/9; background:black; border-radius:15px; overflow:hidden;">
             <iframe id="youtube-frame" width="100%" height="100%" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
-        <button class="close-modal-btn" style="width:auto; border:1px solid white; background:transparent;" onclick="closeVideoModal()">❌ ปิดหน้าต่าง</button>
+        <button class="close-modal-btn clickable" style="width:auto; border:1px solid white; background:transparent;" onclick="closeVideoModal()">❌ ปิดหน้าต่าง</button>
     </div>
 
-    <div id="student-input-modal" class="modal-overlay">
-        <div class="formula-box" style="margin-top: 0; margin-bottom: 0;">
-            <div class="formula-title" style="color: #23a6d5;">📝 พิมพ์สูตรของคุณ</div>
-            <div class="formula-item">
-                <label for="student-shape-select" class="formula-label">🔷 เลือกรูปทรง:</label>
-                <select id="student-shape-select" class="formula-select"></select>
+    <div id="formula-modal" class="modal-overlay ui-container">
+        <div class="formula-box clickable">
+            <h2 id="formula-title" style="margin:0 0 10px 0; color:#2c3e50;">...</h2>
+            <div style="background:#f0f0f0; padding:10px; border-radius:8px; margin-bottom:15px; font-style:italic; font-size:13px; color:#666;">
+                💡 <span id="formula-desc-text">...</span>
             </div>
+            
             <div class="formula-item">
-                 <label for="student-area-input" class="formula-label">📐 พื้นที่ผิว (Surface Area):</label>
-                 <input type="text" id="student-area-input" class="formula-input" placeholder="เช่น 4 * pi * r^2">
-            </div>
-            <div class="formula-item">
-                 <label for="student-vol-input" class="formula-label">🧊 ปริมาตร (Volume):</label>
-                 <input type="text" id="student-vol-input" class="formula-input" placeholder="เช่น (4/3) * pi * r^3">
-            </div>
-            <button class="close-modal-btn btn-submit-blue" onclick="submitStudentFormulas()">แสดงผลลัพธ์</button>
-            <button class="close-modal-btn" style="background: #ff4757; margin-top: 10px;" onclick="closeStudentInputModal()">ยกเลิก</button>
-        </div>
-    </div>
-
-    <div id="formula-modal" class="modal-overlay">
-        <div class="formula-box">
-            <div id="formula-title" class="formula-title">...</div>
-            <div id="formula-desc-container" class="formula-desc">💡 <span id="formula-desc-text">...</span></div>
-            <div class="formula-item">
-                <div class="formula-label">📐 พื้นที่ผิว (Surface Area)</div>
-                <div id="area-display-group" class="formula-math-container">
+                <div class="formula-label">📐 พื้นที่ / พื้นที่ผิว (Area)</div>
+                <div class="formula-math-container">
                     <span id="formula-area-text" class="formula-math">...</span>
-                    <button class="btn-small btn-edit db-edit-btn" onclick="enableEditMode('area')">✏️ แก้ไข</button>
-                </div>
-                <div id="area-edit-group" class="hidden db-edit-group">
-                    <input type="text" id="area-input" class="formula-input" style="margin-bottom: 5px;">
-                    <div class="edit-actions">
-                        <button class="btn-small btn-save" onclick="saveFormula('area')">✅ บันทึก</button>
-                        <button class="btn-small btn-cancel" onclick="cancelEdit('area')">❌ ยกเลิก</button>
-                    </div>
                 </div>
             </div>
+            
             <div class="formula-item">
-                <div class="formula-label">🧊 ปริมาตร (Volume)</div>
-                <div id="volume-display-group" class="formula-math-container">
+                <div class="formula-label">🧊 ปริมาตร / เส้นรอบรูป (Volume/Perimeter)</div>
+                <div class="formula-math-container">
                     <span id="formula-volume-text" class="formula-math">...</span>
-                    <button class="btn-small btn-edit db-edit-btn" onclick="enableEditMode('volume')">✏️ แก้ไข</button>
-                </div>
-                <div id="volume-edit-group" class="hidden db-edit-group">
-                    <input type="text" id="volume-input" class="formula-input" style="margin-bottom: 5px;">
-                    <div class="edit-actions">
-                        <button class="btn-small btn-save" onclick="saveFormula('volume')">✅ บันทึก</button>
-                        <button class="btn-small btn-cancel" onclick="cancelEdit('volume')">❌ ยกเลิก</button>
-                    </div>
                 </div>
             </div>
-            <button class="close-modal-btn" onclick="closeFormulaModal()">ปิดหน้าต่าง</button>
+            
+            <button class="close-modal-btn clickable" onclick="closeFormulaModal()">ปิดหน้าต่าง</button>
         </div>
     </div>
 
-    <div id="ar-guide">📷 <b>ส่องกล้องไปที่การ์ด</b><br><span>(หมุนโดยใช้นิ้วลาก / ซูมโดยใช้สองนิ้ว)</span></div>
+    <div id="gallery-ui" class="ui-container" style="display:none; justify-content: space-between; padding-bottom: 30px;">
+        <div id="top-bar" style="margin-top:20px;">
+            <div id="model-name-box">
+                <span id="model-name" style="font-weight:800; color:#333; font-size:18px;">...</span>
+            </div>
+        </div>
+        
+        <div id="ar-guide" style="background:rgba(0,0,0,0.7); color:white; padding:10px 20px; border-radius:30px; display:none;">
+            📷 ส่องกล้องไปที่การ์ด
+        </div>
 
-    <button id="btn-sound-toggle" onclick="toggleSound()">🔊</button>
-
-    <div id="gallery-ui">
-        <div id="top-bar"><div id="model-name-box"><span id="model-name">...</span></div></div>
-        <div id="bottom-controls">
+        <div id="bottom-controls" style="margin-bottom:20px;">
             <div class="ctrl-group">
-                <button class="btn-ctrl" onclick="prevModel()">◀</button>
-                <button class="btn-ctrl" onclick="enterMenu()">🏠</button>
-                <button class="btn-formula" onclick="openFormula()" title="ดูสูตรเฉลย">📐</button>
-                <button class="btn-student-input" onclick="openStudentInputModal()" title="พิมพ์สูตรเอง">📝</button>
-                <button class="btn-ctrl" onclick="nextModel()">▶</button>
+                <button class="btn-ctrl clickable" onclick="prevModel()">◀</button>
+                <button class="btn-ctrl clickable" onclick="enterMenu()">🏠</button>
+                <button class="btn-formula clickable" onclick="openFormula()">📐</button>
+                <button class="btn-ctrl clickable" onclick="nextModel()">▶</button>
             </div>
-            <br><button id="btn-open-ar" onclick="startAR()">📷 สแกน</button>
+            <br>
+            <button id="btn-open-ar" class="clickable" onclick="startAR()">📷 สแกน AR</button>
         </div>
     </div>
 
-    <div id="ar-ui"><button id="btn-close-ar" onclick="stopAR()">❌ ปิดกล้อง</button></div>
+    <button id="btn-sound-toggle" class="clickable" onclick="toggleSound()">🔊</button>
+    <button id="btn-close-ar" class="clickable" onclick="stopAR()" style="display:none;">❌ ปิดกล้อง</button>
 
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiError: no; uiScanning: no; filterMinCF: 0.0001; missTolerance: 10;" 
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiError: no; uiScanning: no;" 
              color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" 
              vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false"
+             stats="false"
              gesture-detector> 
         
         <a-assets>
@@ -315,9 +337,10 @@
             <a-asset-item id="glb-5" src="./m5.glb"></a-asset-item>
             <a-asset-item id="glb-6" src="./m6.glb"></a-asset-item>
             <a-asset-item id="glb-7" src="./m7.glb"></a-asset-item>
+            <a-asset-item id="glb-8" src="./m8.glb"></a-asset-item>
         </a-assets>
 
-        <a-light type="ambient" intensity="1.2"></a-light>
+        <a-light type="ambient" intensity="1"></a-light>
         <a-light type="directional" position="2 4 2" intensity="0.8"></a-light>
 
         <a-camera position="0 0 0" look-controls="enabled: false">
@@ -329,221 +352,109 @@
                 <a-gltf-model id="view-m5" src="#glb-5" scale="0.5 0.5 0.5" visible="false" animation="property: rotation; to: 0 360 0; dur: 8000; loop: true"></a-gltf-model>
                 <a-gltf-model id="view-m6" src="#glb-6" scale="0.5 0.5 0.5" visible="false" animation="property: rotation; to: 0 360 0; dur: 8000; loop: true"></a-gltf-model>
                 <a-gltf-model id="view-m7" src="#glb-7" scale="0.5 0.5 0.5" visible="false" animation="property: rotation; to: 0 360 0; dur: 8000; loop: true"></a-gltf-model>
+                <a-gltf-model id="view-m8" src="#glb-8" scale="0.5 0.5 0.5" visible="false" animation="property: rotation; to: 0 360 0; dur: 8000; loop: true"></a-gltf-model>
             </a-entity>
         </a-camera>
 
         <a-entity id="ar-group" visible="false">
-            <a-entity mindar-image-target="targetIndex: 0"><a-gltf-model src="#glb-1" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
-            <a-entity mindar-image-target="targetIndex: 1"><a-gltf-model src="#glb-2" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
-            <a-entity mindar-image-target="targetIndex: 2"><a-gltf-model src="#glb-3" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
-            <a-entity mindar-image-target="targetIndex: 3"><a-gltf-model src="#glb-4" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
-            <a-entity mindar-image-target="targetIndex: 4"><a-gltf-model src="#glb-5" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
-            <a-entity mindar-image-target="targetIndex: 5"><a-gltf-model src="#glb-6" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
-            <a-entity mindar-image-target="targetIndex: 6"><a-gltf-model src="#glb-7" scale="0.5 0.5 0.5" position="0 0 0" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 0"><a-gltf-model src="#glb-1" scale="0.5 0.5 0.5" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 1"><a-gltf-model src="#glb-2" scale="0.5 0.5 0.5" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 2"><a-gltf-model src="#glb-3" scale="0.5 0.5 0.5" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 3"><a-gltf-model src="#glb-4" scale="0.5 0.5 0.5" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 4"><a-gltf-model src="#glb-5" scale="0.5 0.5 0.5" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 5"><a-gltf-model src="#glb-6" scale="0.5 0.5 0.5" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 6"><a-gltf-model src="#glb-7" scale="0.5 0.5 0.5" gesture-handler></a-gltf-model></a-entity>
+            <a-entity mindar-image-target="targetIndex: 7"><a-gltf-model src="#glb-8" scale="0.5 0.5 0.5" gesture-handler></a-gltf-model></a-entity>
         </a-entity>
     </a-scene>
 
     <script>
-        // --- 📊 ข้อมูลสูตร + คำอ่าน (Speech) ---
+        // Data
         let geometryData = [
-            { 
-                name: "ลูกบาศก์ (Cube)", 
-                area: "6s<sup>2</sup>", vol: "s<sup>3</sup>", desc: "s = ความยาวด้าน (Side)",
-                speech: "นี่คือ ลูกบาศก์, พื้นที่ผิวคือ หก คูณ ด้านยกกำลังสอง, ปริมาตรคือ ด้านยกกำลังสาม"
-            },
-            { 
-                name: "ทรงกลม (Sphere)", 
-                area: "4πr<sup>2</sup>", vol: "4/3 × πr<sup>3</sup>", desc: "r = รัศมี (Radius), π ≈ 3.14",
-                speech: "นี่คือ ทรงกลม, พื้นที่ผิวคือ สี่ พาย อาร์ ยกกำลังสอง, ปริมาตรคือ เศษสี่ส่วนสาม พาย อาร์ ยกกำลังสาม"
-            },
-            { 
-                name: "ทรงกระบอก (Cylinder)", 
-                area: "2πrh + 2πr<sup>2</sup>", vol: "πr<sup>2</sup>h", desc: "r = รัศมีฐาน, h = ความสูง",
-                speech: "นี่คือ ทรงกระบอก, พื้นที่ผิวคือ สอง พาย อาร์ เอช บวก สอง พาย อาร์ ยกกำลังสอง, ปริมาตรคือ พาย อาร์ ยกกำลังสอง เอช"
-            },
-            { 
-                name: "กรวย (Cone)", 
-                area: "πrl + πr<sup>2</sup>", vol: "1/3 × πr<sup>2</sup>h", desc: "r = รัศมี, h = สูงตรง, l = สูงเอียง",
-                speech: "นี่คือ กรวย, พื้นที่ผิวคือ พาย อาร์ แอล บวก พาย อาร์ ยกกำลังสอง, ปริมาตรคือ เศษหนึ่งส่วนสาม พาย อาร์ ยกกำลังสอง เอช"
-            },
-            { 
-                name: "วงแหวน (Torus)", 
-                area: "4π<sup>2</sup>Rr", vol: "2π<sup>2</sup>Rr<sup>2</sup>", desc: "R = รัศมีวงใหญ่, r = รัศมีท่อวงเล็ก",
-                speech: "นี่คือ วงแหวน หรือ ทอรัส, พื้นที่ผิวคือ สี่ พาย ยกกำลังสอง อาร์ใหญ่ อาร์เล็ก, ปริมาตรคือ สอง พาย ยกกำลังสอง อาร์ใหญ่ อาร์เล็ก ยกกำลังสอง"
-            },
-            { 
-                name: "พีระมิด (Pyramid)", 
-                area: "พื้นที่ฐาน + (1/2 × รอบฐาน × l)", vol: "1/3 × พื้นที่ฐาน × h", desc: "h = สูงตรง, l = สูงเอียง",
-                speech: "นี่คือ พีระมิด, พื้นที่ผิวคือ พื้นที่ฐาน บวก เศษหนึ่งส่วนสอง คูณ ความยาวรอบฐาน คูณ สูงเอียง, ปริมาตรคือ เศษหนึ่งส่วนสาม คูณ พื้นที่ฐาน คูณ สูงตรง"
-            },
-            { 
-                name: "ทรง 12 หน้า (Dodecahedron)", 
-                area: "3 × √(25+10√5) × s<sup>2</sup>", vol: "((15+7√5)/4) × s<sup>3</sup>", desc: "s = ความยาวด้าน",
-                speech: "นี่คือ ทรงสิบสองหน้า หรือ โดเดคาฮีดรอน, ปริมาตรคำนวณจาก ความยาวด้านยกกำลังสาม คูณค่าคงที่"
-            }
+            { name: "1. ลูกบาศก์ (Cube)", area: "6 × (ด้าน × ด้าน)", vol: "ด้าน × ด้าน × ด้าน", desc: "มีหน้าเป็นสี่เหลี่ยมจัตุรัสทั้งหมด 6 หน้า 
+
+[Image of cube volume formula]
+", speech: "ลูกบาศก์, พื้นที่ผิวคือ หกคูณด้านกำลังสอง, ปริมาตรคือ ด้านกำลังสาม" },
+            { name: "2. ทรงกลม (Sphere)", area: "4 × π × r²", vol: "4/3 × π × r³", desc: "r = รัศมี, π ≈ 3.14 หรือ 22/7 
+
+[Image of sphere volume formula]
+", speech: "ทรงกลม, พื้นที่ผิวคือ สี่พายอาร์กำลังสอง, ปริมาตรคือ เศษสี่ส่วนสาม พายอาร์กำลังสาม" },
+            { name: "3. ทรงกระบอก (Cylinder)", area: "ผิวข้าง (2πrh) + ฐาน (2πr²)", vol: "π × r² × h", desc: "พื้นที่ผิว = พื้นที่ผิวข้างรอบตัว + พื้นที่วงกลมหัวท้าย 
+
+[Image of cylinder volume formula]
+", speech: "ทรงกระบอก, พื้นที่ผิวคือ สองพายอาร์เอช บวก สองพายอาร์กำลังสอง, ปริมาตรคือ พายอาร์กำลังสองเอช" },
+            { name: "4. กรวย (Cone)", area: "ผิวข้าง (πrl) + ฐาน (πr²)", vol: "1/3 × π × r² × h", desc: "l = สูงเอียง, h = สูงตรง 
+
+[Image of cone volume formula]
+", speech: "กรวย, พื้นที่ผิวคือ พายอาร์แอล บวก พายอาร์กำลังสอง, ปริมาตรคือ เศษหนึ่งส่วนสาม พายอาร์กำลังสองเอช" },
+            { name: "5. วงแหวน (Torus)", area: "4π²Rr", vol: "2π²Rr²", desc: "R = รัศมีวงใหญ่, r = รัศมีท่อวงเล็ก", speech: "วงแหวน, พื้นที่ผิวคือ สี่พายกำลังสองอาร์ใหญ่รเล็ก, ปริมาตรคือ สองพายกำลังสองอาร์ใหญ่รเล็กกำลังสอง" },
+            { name: "6. พีระมิดฐานสี่เหลี่ยม (Pyramid)", area: "พื้นที่ฐาน + (1/2 × รอบฐาน × สูงเอียง)", vol: "1/3 × พื้นที่ฐาน × สูงตรง", desc: "หาพื้นที่ผิวใช้ 'สูงเอียง' (l) แต่หาปริมาตรใช้ 'สูงตรง' (h) 
+
+[Image of pyramid volume formula]
+", speech: "พีระมิด, พื้นที่ผิวคือ พื้นที่ฐาน บวก พื้นที่ผิวข้าง, ปริมาตรคือ เศษหนึ่งส่วนสาม คูณพื้นที่ฐาน คูณสูงตรง" },
+            { name: "7. ทรง 12 หน้า (Dodecahedron)", area: "3 × √(25+10√5) × ด้าน²", vol: "ประมาณ 7.66 × ด้าน³", desc: "รูปทรงพลาโตนิก ประกอบด้วยหน้ารูป 5 เหลี่ยมด้านเท่า 12 หน้า", speech: "ทรงสิบสองหน้า, ปริมาตรคำนวณจาก ความยาวด้านยกกำลังสาม คูณค่าคงที่" },
+            { name: "8. สี่เหลี่ยม (Square)", area: "ความกว้าง × ความยาว", vol: "4 × ความยาวด้าน", desc: "สูตรสำหรับรูป 2 มิติ: สูตรนี้แสดง พื้นที่ (Area) และ เส้นรอบรูป (Perimeter)", speech: "สี่เหลี่ยม, พื้นที่คือ กว้างคูณยาว, เส้นรอบรูปคือ สี่คูณความยาวด้าน" }
         ];
 
         let currentIdx = 0;
-        let isProcessing = false; 
+        let isProcessing = false;
         let arSystem = null;
-        let isSoundOn = true; 
+        let isSoundOn = true;
         const sceneEl = document.querySelector('a-scene');
         const loadingOverlay = document.getElementById('loading');
-        
+
         sceneEl.addEventListener('loaded', () => { 
             arSystem = sceneEl.systems["mindar-image-system"]; 
-            setupARListeners(); 
+            setupARListeners();
         });
 
-        window.onload = function() {
-            const selectEl = document.getElementById('student-shape-select');
-            geometryData.forEach((item, index) => {
-                const option = document.createElement("option");
-                option.value = index;
-                option.text = item.name;
-                selectEl.appendChild(option);
+        // 🔥 สำคัญ: หยุดการส่งต่อการกด (Propagation) เพื่อไม่ให้โมเดลแย่งไป
+        document.addEventListener('DOMContentLoaded', () => {
+            const clickables = document.querySelectorAll('.clickable');
+            clickables.forEach(el => {
+                el.addEventListener('touchstart', (e) => e.stopPropagation());
+                el.addEventListener('mousedown', (e) => e.stopPropagation());
+                el.addEventListener('click', (e) => e.stopPropagation());
             });
-        };
+        });
 
-        // --- 🔥 ฟังก์ชันจัดการเสียง (ปลดล็อก Mobile Autoplay) 🔥 ---
+        // Speech
         function speak(text) {
             if (!isSoundOn) return; 
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'th-TH'; // ภาษาไทย
-            utterance.rate = 1.0;
+            utterance.lang = 'th-TH'; utterance.rate = 1.0;
             window.speechSynthesis.speak(utterance);
         }
-
         function stopSpeaking() { window.speechSynthesis.cancel(); }
-
         function toggleSound() {
             isSoundOn = !isSoundOn;
-            const btn = document.getElementById('btn-sound-toggle');
-            btn.innerHTML = isSoundOn ? "🔊" : "🔇";
+            document.getElementById('btn-sound-toggle').innerHTML = isSoundOn ? "🔊" : "🔇";
             if(!isSoundOn) stopSpeaking();
         }
-
-        // ฟังก์ชันนี้จะถูกเรียกตอนกดปุ่ม "สแกน" เพื่อขอสิทธิ์เล่นเสียงบนมือถือ
         function unlockAudio() {
-            const emptySource = new SpeechSynthesisUtterance("");
-            window.speechSynthesis.speak(emptySource);
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
         }
 
-        function setupARListeners() {
-            const arTargets = document.querySelectorAll('[mindar-image-target]');
-            arTargets.forEach((target, index) => {
-                target.addEventListener("targetFound", event => {
-                    // 1. เล่นอนิเมชันเด้ง (ปรับปรุงไม่ให้ทับซ้อนการซูม)
-                    const model = target.querySelector('a-gltf-model');
-                    if(model) {
-                        model.removeAttribute('animation__pop');
-                        // ตั้งค่าเริ่มต้นให้เล็ก
-                        const currentScale = model.object3D.scale;
-                        model.setAttribute('scale', '0 0 0');
-                        // เด้งกลับมาที่ขนาด 0.5
-                        setTimeout(() => {
-                             model.setAttribute('animation__pop', 'property: scale; from: 0 0 0; to: 0.5 0.5 0.5; dur: 1200; easing: easeOutElastic');
-                        }, 50);
-                    }
-                    // 2. พูดชื่อและสูตร
-                    speak(geometryData[index].speech);
-                });
-
-                target.addEventListener("targetLost", event => {
-                    stopSpeaking(); 
-                });
-            });
-        }
-
-        const youtubeVideoID = "bPyxXEQ7A9M"; 
-        function openBookLink() { window.open("https://www.athometh.com/math/geometry/", "_blank"); }
-        function openVideoModal() { document.getElementById('youtube-frame').src = `https://www.youtube.com/embed/${youtubeVideoID}?autoplay=1`; document.getElementById('video-modal').style.display = 'flex'; }
-        function closeVideoModal() { document.getElementById('youtube-frame').src = ""; document.getElementById('video-modal').style.display = 'none'; }
-
-        function openStudentInputModal() {
-            document.getElementById('student-shape-select').value = currentIdx;
-            document.getElementById('student-area-input').value = "";
-            document.getElementById('student-vol-input').value = "";
-            document.getElementById('student-input-modal').style.display = 'flex';
-        }
-        function closeStudentInputModal() { document.getElementById('student-input-modal').style.display = 'none'; }
-
-        function submitStudentFormulas() {
-            const userArea = document.getElementById('student-area-input').value || "(ไม่ได้ระบุ)";
-            const userVol = document.getElementById('student-vol-input').value || "(ไม่ได้ระบุ)";
-            const selectedShapeIndex = parseInt(document.getElementById('student-shape-select').value);
-            currentIdx = selectedShapeIndex;
+        // Logic
+        function enterGallery() {
+            document.getElementById('intro-screen').style.display = 'none';
+            document.getElementById('gallery-ui').style.display = 'flex';
             updateGallery();
-            closeStudentInputModal();
-            openFormula(userArea, userVol);
-            if(document.getElementById('gallery-ui').style.display !== 'none'){ playPopAnimation(); }
         }
 
-        function playPopAnimation() {
-            let curr = document.getElementById(`view-m${currentIdx+1}`);
-            if(curr) {
-                curr.setAttribute('scale', '0 0 0');
-                curr.removeAttribute('animation__pop');
-                setTimeout(() => {
-                    curr.setAttribute('animation__pop', 'property: scale; from: 0 0 0; to: 0.5 0.5 0.5; dur: 1200; easing: easeOutElastic');
-                }, 50);
-            }
+        function enterMenu() {
+            document.getElementById('intro-screen').style.display = 'flex';
+            document.getElementById('gallery-ui').style.display = 'none';
         }
 
-        function openFormula(studentArea = null, studentVol = null) {
-            const isStudentInput = studentArea !== null || studentVol !== null;
-            let areaText, volText, titleText, descText;
-            if (isStudentInput) {
-                titleText = "ผลลัพธ์ที่คุณพิมพ์ (Your Input)";
-                areaText = studentArea;
-                volText = studentVol;
-                descText = "สูตรที่คุณจำได้ (ลองเทียบกับเฉลยดูนะ)";
-                document.querySelectorAll('.db-edit-btn').forEach(el => el.classList.add('hidden'));
-            } else {
-                const data = geometryData[currentIdx];
-                titleText = data.name;
-                areaText = data.area;
-                volText = data.vol;
-                descText = data.desc;
-                document.querySelectorAll('.db-edit-btn').forEach(el => el.classList.remove('hidden'));
-                if(!isStudentInput) speak(data.speech);
-            }
-            document.getElementById('formula-title').innerText = titleText;
-            document.getElementById('formula-desc-text').innerHTML = descText;
-            document.getElementById(`formula-area-text`).innerHTML = areaText;
-            document.getElementById(`formula-volume-text`).innerHTML = volText;
-            document.getElementById(`area-display-group`).classList.remove('hidden');
-            document.getElementById(`area-edit-group`).classList.add('hidden');
-            document.getElementById(`volume-display-group`).classList.remove('hidden');
-            document.getElementById(`volume-edit-group`).classList.add('hidden');
-            document.getElementById('formula-modal').style.display = 'flex';
+        function enterARDirectly() {
+            document.getElementById('intro-screen').style.display = 'none';
+            startAR();
         }
-
-        function enableEditMode(type) {
-            const data = geometryData[currentIdx];
-            let cleanValue = data[type === 'area' ? 'area' : 'vol'].replace(/<sup>/g, '^').replace(/<\/sup>/g, '');
-            document.getElementById(`${type}-input`).value = cleanValue;
-            document.getElementById(`${type}-display-group`).classList.add('hidden');
-            document.getElementById(`${type}-edit-group`).classList.remove('hidden');
-        }
-        function saveFormula(type) {
-            const newValue = document.getElementById(`${type}-input`).value;
-            if (type === 'area') { geometryData[currentIdx].area = newValue; } else { geometryData[currentIdx].vol = newValue; }
-            openFormula();
-        }
-        function cancelEdit(type) { openFormula(); }
-        function closeFormulaModal() { 
-            document.getElementById('formula-modal').style.display = 'none'; 
-            stopSpeaking(); 
-        }
-
-        function enterGallery() { document.getElementById('intro-screen').style.display = 'none'; document.getElementById('gallery-ui').style.display = 'block'; updateGallery(); }
-        function enterMenu() { document.getElementById('intro-screen').style.display = 'flex'; document.getElementById('gallery-ui').style.display = 'none'; }
-        function enterARDirectly() { document.getElementById('intro-screen').style.display = 'none'; startAR(); }
 
         function updateGallery() {
-            for(let i=1; i<=7; i++) {
+            for(let i=1; i<=8; i++) {
                 let el = document.getElementById(`view-m${i}`);
                 if(el) el.setAttribute('visible', false);
             }
@@ -553,49 +464,88 @@
         }
 
         function nextModel() { 
-            if(isProcessing) return; 
             stopSpeaking(); 
             currentIdx = (currentIdx + 1) % geometryData.length; 
             updateGallery(); 
         }
         function prevModel() { 
-            if(isProcessing) return; 
             stopSpeaking(); 
             currentIdx = (currentIdx - 1 + geometryData.length) % geometryData.length; 
             updateGallery(); 
         }
 
+        function openFormula() {
+            const data = geometryData[currentIdx];
+            document.getElementById('formula-title').innerText = data.name;
+            document.getElementById('formula-desc-text').innerHTML = data.desc;
+            document.getElementById(`formula-area-text`).innerHTML = data.area;
+            document.getElementById(`formula-volume-text`).innerHTML = data.vol;
+            document.getElementById('formula-modal').style.display = 'flex';
+            speak(data.speech);
+        }
+        function closeFormulaModal() { 
+            document.getElementById('formula-modal').style.display = 'none'; 
+            stopSpeaking(); 
+        }
+
+        // External Links
+        const youtubeVideoID = "bPyxXEQ7A9M"; 
+        function openBookLink() { window.open("https://www.athometh.com/math/geometry/", "_blank"); }
+        function openVideoModal() { 
+            document.getElementById('youtube-frame').src = `https://www.youtube.com/embed/${youtubeVideoID}?autoplay=1`; 
+            document.getElementById('video-modal').style.display = 'flex'; 
+        }
+        function closeVideoModal() { 
+            document.getElementById('youtube-frame').src = ""; 
+            document.getElementById('video-modal').style.display = 'none'; 
+        }
+
+        // AR Logic
         async function startAR() {
             if(isProcessing) return;
             if(!arSystem) { alert("ระบบกำลังโหลด..."); return; }
-            
-            // 🔥 ปลดล็อกเสียงบนมือถือทันทีที่กดปุ่ม 🔥
             unlockAudio();
-
-            isProcessing = true; loadingOverlay.style.display = 'flex';
-            if(document.getElementById('btn-open-ar')) document.getElementById('btn-open-ar').disabled = true;
+            isProcessing = true; 
+            loadingOverlay.style.display = 'flex';
 
             try {
                 document.getElementById('intro-screen').style.display = 'none';
                 document.getElementById('gallery-ui').style.display = 'none';
                 document.getElementById('gallery-group').setAttribute('visible', false);
                 document.getElementById('ar-group').setAttribute('visible', true);
-                document.getElementById('btn-sound-toggle').style.display = 'block';
-
+                
                 await arSystem.start();
-                document.getElementById('ar-ui').style.display = 'block';
+                
+                document.getElementById('btn-close-ar').style.display = 'block';
                 document.getElementById('ar-guide').style.display = 'block';
+                document.getElementById('btn-sound-toggle').style.display = 'block';
             } catch(e) {
                 alert("ไม่สามารถเปิดกล้องได้");
                 document.getElementById('gallery-group').setAttribute('visible', true);
-                document.getElementById('gallery-ui').style.display = 'block';
+                document.getElementById('gallery-ui').style.display = 'flex';
             } finally {
                 loadingOverlay.style.display = 'none';
-                if(document.getElementById('btn-open-ar')) document.getElementById('btn-open-ar').disabled = false;
                 isProcessing = false;
             }
         }
+
         function stopAR() { window.location.reload(); }
+
+        function setupARListeners() {
+            const arTargets = document.querySelectorAll('[mindar-image-target]');
+            arTargets.forEach((target, index) => {
+                target.addEventListener("targetFound", () => {
+                    const model = target.querySelector('a-gltf-model');
+                    if(model) {
+                        model.removeAttribute('animation__pop');
+                        model.setAttribute('scale', '0 0 0');
+                        setTimeout(() => { model.setAttribute('animation__pop', 'property: scale; from: 0 0 0; to: 0.5 0.5 0.5; dur: 1200; easing: easeOutElastic'); }, 50);
+                    }
+                    speak(geometryData[index].speech);
+                });
+                target.addEventListener("targetLost", () => { stopSpeaking(); });
+            });
+        }
     </script>
 </body>
 </html>
